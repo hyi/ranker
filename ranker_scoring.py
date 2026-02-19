@@ -17,7 +17,7 @@ def main():
                         default='aragorn',
                         help='input ranker, supported rankers are aragorn and arax')
     parser.add_argument('--output_file', type=str, required=False,
-                        default='data/shepherd_aragorn_score_response.json"',
+                        default='results/shepherd_aragorn_score_response.json"',
                         help='output file for the scored response')
 
     args = parser.parse_args()
