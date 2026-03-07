@@ -11,13 +11,13 @@ headers = {
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='data/bte_arax_score_query.json',
+                        default='data/arax_arax_score_query_no_direct_edges.json',
                         help='input file of the workflow lookup response')
     parser.add_argument('--ranker', type=str, required=False,
                         default='arax',
                         help='input ranker, supported rankers are aragorn and arax')
     parser.add_argument('--output_file', type=str, required=False,
-                        default='results/shepherd_bte_arax_score_response.json',
+                        default='results/shepherd_arax_arax_score_response_no_direct_edges.json',
                         help='output file for the scored response')
 
     args = parser.parse_args()
