@@ -20,7 +20,7 @@ def filter_trapi_message(message):
 
     referenced_edges = set()
     new_results = []
-
+    print(f'original result count: {len(message["results"])}')
     # filter out direct edges not included in supported edges in results
     for result in message["results"]:
         keep_result = False
@@ -48,7 +48,7 @@ def filter_trapi_message(message):
             new_results.append(result)
 
     message["results"] = new_results
-
+    print(f'after filtering result count: {len(message["results"])}')
     # prune edges from kg to remove direct edges
     new_edges = {eid: edges[eid] for eid in referenced_edges if eid in edges}
     kg["edges"] = new_edges
@@ -69,13 +69,13 @@ def filter_trapi_message(message):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='data/shepherd_bte_response.json',
+                        default='data/query3/shepherd_bte_response.json',
                         help='input file of the workflow lookup response')
     parser.add_argument('--score_source', type=str, required=False,
                         default='arax',
                         help='score source: either aragorn or arax')
     parser.add_argument('--output_file', type=str, required=False,
-                        default='data/bte_arax_score_query_no_direct_edges.json',
+                        default='data/query3/bte_arax_score_query_no_direct_edges.json',
                         help='output file for the score query formed from input file')
 
     args = parser.parse_args()
@@ -88,21 +88,22 @@ if __name__ == '__main__':
         lookup_data = json.load(f)
 
     if score_source == 'arax':
-        score_id = 'score'
+        workflow = [
+            {"id": 'arax.rank'}
+        ]
     elif score_source == 'aragorn':
-        score_id = 'aragorn.score'
+        workflow = [
+            {"id": "aragorn.omnicorp"},
+            {"id": 'aragorn.score'}
+        ]
     else:
         print(f'wrong input score_source: {score_source}')
         exit(1)
 
-    print(f'score_id: {score_id}')
-
     score_dict = {
-            "message": filter_trapi_message(lookup_data['message']),
-            "workflow": [
-                {"id": score_id}
-            ]
-        }
+        "message": filter_trapi_message(lookup_data['message']),
+        "workflow": workflow
+    }
     print(f'score_dict workflow: {score_dict["workflow"]}')
     print(f"output_file: {output_file}")
     with open(output_file, 'w') as f:
