@@ -77,13 +77,13 @@ def compare_rankers(aragorn_file, arax_file):
                       ],
                       how="outer")
 
-    merged["score diff (aragorn-arax"] = merged["aragorn_score"] - merged["arax_score"]
+    merged["score diff (aragorn-arax)"] = merged["aragorn_score"] - merged["arax_score"]
     merged["rank diff (aragorn-arax)"] = merged["aragorn_rank"] - merged["arax_rank"]
 
     merged = merged.sort_values("aragorn_rank")
     desired_column_order = ['subject_id', 'subject_name', 'object_id', 'object_name',
                             'predicate', 'aragorn_score', 'arax_score', 'aragorn_rank', 'arax_rank',
-                            'score diff (aragorn-arax', 'rank diff (aragorn-arax)', 'edge_id']
+                            'score diff (aragorn-arax)', 'rank diff (aragorn-arax)', 'edge_id']
     return merged[desired_column_order]
 
 
