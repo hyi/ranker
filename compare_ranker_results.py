@@ -32,8 +32,10 @@ def extract_results(json_data, ranker_name):
 
     df = pd.DataFrame(rows)
     # rank descending (higher score = better)
-    df[f"{ranker_name}_rank"] = (df[f"{ranker_name}_score"].rank(ascending=False, method="min").astype(int))
-
+    if f"{ranker_name}_score" in df.columns:
+        df[f"{ranker_name}_rank"] = (df[f"{ranker_name}_score"].rank(ascending=False, method="min").astype(int))
+    else:
+        print(f"df for {ranker_name} is: {df}")
     return df
 
 
@@ -56,16 +58,11 @@ def build_kg_maps(message):
     return node_name, edge_info
 
 
-def compare_rankers(aragorn_file, arax_file):
-    with open(aragorn_file) as f:
-        aragorn_data = json.load(f)
-
-    with open(arax_file) as f:
-        arax_data = json.load(f)
-
+def compare_rankers(aragorn_data, arax_data):
     df_aragorn = extract_results(aragorn_data, "aragorn")
     df_arax = extract_results(arax_data, "arax")
-
+    if df_aragorn.empty or df_arax.empty:
+        return None
     merged = pd.merge(df_aragorn, df_arax,
                       on=[
                           "subject_id",
@@ -77,13 +74,12 @@ def compare_rankers(aragorn_file, arax_file):
                       ],
                       how="outer")
 
-    merged["score diff (aragorn-arax)"] = merged["aragorn_score"] - merged["arax_score"]
     merged["rank diff (aragorn-arax)"] = merged["aragorn_rank"] - merged["arax_rank"]
 
     merged = merged.sort_values("aragorn_rank")
     desired_column_order = ['subject_id', 'subject_name', 'object_id', 'object_name',
                             'predicate', 'aragorn_score', 'arax_score', 'aragorn_rank', 'arax_rank',
-                            'score diff (aragorn-arax)', 'rank diff (aragorn-arax)', 'edge_id']
+                            'rank diff (aragorn-arax)', 'edge_id']
     return merged[desired_column_order]
 
 
@@ -95,7 +91,7 @@ if __name__ == '__main__':
     parser.add_argument('--input_query_file', type=str, required=False,
                         default='results/query3/input_query.json')
     parser.add_argument('--output_file', type=str, required=False,
-                        default='results/query3/query_shepherd_ranker_comparison.xlsx',
+                        default='results/query3/sample_query_shepherd_ranker_comparison.xlsx',
                         help='output file for the comparison result')
 
     args = parser.parse_args()
@@ -108,15 +104,32 @@ if __name__ == '__main__':
     query_lines = json.dumps(query, indent=2).split("\n")
     query_df = pd.DataFrame({"query": query_lines})
 
-    df_aragorn = compare_rankers(input_file.format('aragorn', 'aragorn'), input_file.format('aragorn', 'arax'))
-    df_arax = compare_rankers(input_file.format('arax', 'aragorn'), input_file.format('arax', 'arax'))
-    df_bte = compare_rankers(input_file.format('bte', 'aragorn'), input_file.format('bte', 'arax'))
+    with open(input_file.format('aragorn', 'aragorn')) as f:
+        aragorn_data = json.load(f)
+    with open(input_file.format('aragorn', 'arax')) as f:
+        arax_data = json.load(f)
+    df_aragorn = compare_rankers(aragorn_data, arax_data)
+
+    with open(input_file.format('arax', 'aragorn')) as f:
+        aragorn_data = json.load(f)
+    with open(input_file.format('arax', 'arax')) as f:
+        arax_data = json.load(f)
+    df_arax = compare_rankers(aragorn_data, arax_data)
+
+    with open(input_file.format('bte', 'aragorn')) as f:
+        aragorn_data = json.load(f)
+    with open(input_file.format('bte', 'arax')) as f:
+        arax_data = json.load(f)
+    df_bte = compare_rankers(aragorn_data, arax_data)
 
     with pd.ExcelWriter(output_file) as writer:
         query_df.to_excel(writer, sheet_name="input_query", index=False)
-        df_aragorn.to_excel(writer, sheet_name="Aragorn_ARA", index=False)
-        df_arax.to_excel(writer, sheet_name="ARAX_ARA", index=False)
-        df_bte.to_excel(writer, sheet_name="BTE_ARA", index=False)
+        if not df_aragorn.empty:
+            df_aragorn.to_excel(writer, sheet_name="Aragorn_ARA", index=False)
+        if not df_arax.empty:
+            df_arax.to_excel(writer, sheet_name="ARAX_ARA", index=False)
+        if not df_bte.empty:
+            df_bte.to_excel(writer, sheet_name="BTE_ARA", index=False)
 
     exit(0)
 

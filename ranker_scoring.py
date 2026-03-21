@@ -7,6 +7,13 @@ headers = {
     "Content-Type": "application/json"
 }
 
+URL = "https://shepherd.renci.org/aragorn/query"
+
+def run_query(payload):
+    r = requests.post(URL, headers=headers, json=payload)
+    r.raise_for_status()
+    return r.json()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process arguments.')
@@ -25,17 +32,10 @@ if __name__ == '__main__':
     with open(input_file, "r") as f:
         data = json.load(f)
 
-    url = "https://shepherd.renci.org/aragorn/query"
+    resp_json = run_query(data)
 
-    # Send POST request
-    response = requests.post(url, headers=headers, json=data)
-
-    # Raise exception if request failed
-    response.raise_for_status()
-
-    # Write response to file
     with open(output_file, "w") as f:
-        json.dump(response.json(), f, indent=2)
+        json.dump(resp_json, f, indent=2)
 
     print(f"Response saved to {output_file}")
     exit(0)
