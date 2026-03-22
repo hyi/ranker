@@ -34,8 +34,6 @@ def extract_results(json_data, ranker_name):
     # rank descending (higher score = better)
     if f"{ranker_name}_score" in df.columns:
         df[f"{ranker_name}_rank"] = (df[f"{ranker_name}_score"].rank(ascending=False, method="min").astype(int))
-    else:
-        print(f"df for {ranker_name} is: {df}")
     return df
 
 
@@ -59,6 +57,8 @@ def build_kg_maps(message):
 
 
 def compare_rankers(aragorn_data, arax_data):
+    if not aragorn_data or not aragorn_data:
+        return None
     df_aragorn = extract_results(aragorn_data, "aragorn")
     df_arax = extract_results(arax_data, "arax")
     if df_aragorn.empty or df_arax.empty:

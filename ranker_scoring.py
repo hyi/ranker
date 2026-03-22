@@ -11,7 +11,13 @@ URL = "https://shepherd.renci.org/aragorn/query"
 
 def run_query(payload):
     r = requests.post(URL, headers=headers, json=payload)
-    r.raise_for_status()
+
+    try:
+        r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"status code: {r.status_code}, HTTP error occurred: {e}")
+        return None
+
     return r.json()
 
 
@@ -34,8 +40,10 @@ if __name__ == '__main__':
 
     resp_json = run_query(data)
 
-    with open(output_file, "w") as f:
-        json.dump(resp_json, f, indent=2)
-
-    print(f"Response saved to {output_file}")
+    if resp_json:
+        with open(output_file, "w") as f:
+            json.dump(resp_json, f, indent=2)
+        print(f"Response saved to {output_file}")
+    else:
+        print(f'no valid response is returned for the query in {input_file}')
     exit(0)

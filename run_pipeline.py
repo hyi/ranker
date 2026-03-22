@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 from create_ranker_query_data import filter_trapi_message
 from ranker_scoring import run_query
-from compare_ranker_results import extract_results, compare_rankers
+from compare_ranker_results import compare_rankers
 
 
 ARAS = ["aragorn", "arax", "bte"]
@@ -36,9 +36,11 @@ def process_query(qid, query):
             "workflow": [{"id": LOOKUP_WORKFLOWS[ara]}]
         }
         lookup_resp = run_query(lookup_payload)
-
+        if not lookup_resp:
+            print('lookup_resp is empty')
+            continue
         if "message" not in lookup_resp:
-            print(lookup_resp)
+            print(f'lookup_resp does not contain message key: {lookup_resp}')
             continue
 
         if not "knowledge_graph" in lookup_resp["message"]:
