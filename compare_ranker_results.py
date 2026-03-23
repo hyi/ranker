@@ -122,14 +122,26 @@ if __name__ == '__main__':
         arax_data = json.load(f)
     df_bte = compare_rankers(aragorn_data, arax_data)
 
-    with pd.ExcelWriter(output_file) as writer:
-        query_df.to_excel(writer, sheet_name="input_query", index=False)
-        if not df_aragorn.empty:
-            df_aragorn.to_excel(writer, sheet_name="Aragorn_ARA", index=False)
-        if not df_arax.empty:
-            df_arax.to_excel(writer, sheet_name="ARAX_ARA", index=False)
-        if not df_bte.empty:
-            df_bte.to_excel(writer, sheet_name="BTE_ARA", index=False)
+    dfs = []
+    if not df_aragorn.empty:
+        df_aragorn["ARA"] = "Aragorn"
+        dfs.append(df_aragorn)
+
+    if not df_arax.empty:
+        df_arax["ARA"] = "ARAX"
+        dfs.append(df_arax)
+
+    if not df_bte.empty:
+        df_bte["ARA"] = "BTE"
+        dfs.append(df_bte)
+
+    if dfs:
+        df_combined = pd.concat(dfs, ignore_index=True)
+        df_combined = df_combined[["ARA"] + [c for c in df_combined.columns if c != "ARA"]]
+
+        with pd.ExcelWriter(output_file) as writer:
+            query_df.to_excel(writer, sheet_name="input_query", index=False)
+            df_combined.to_excel(writer, sheet_name="ARA_ranker_results", index=False)
 
     exit(0)
 
