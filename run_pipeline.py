@@ -69,22 +69,38 @@ def process_query(qid, query):
     return sheets
 
 
-def main(query_file, out_file_pattern):
+def main(query_file, out):
     with open(query_file) as f:
         queries = json.load(f)
 
+    all_results = []
+    query_rows = []
+
     for qid, query in enumerate(queries):
         qry_sheets = process_query(qid, query)
-        out = out_file_pattern.format(f'query{qid}')
-        with pd.ExcelWriter(out) as writer:
-            pd.DataFrame({"query": json.dumps(query, indent=2).split("\n")}
-                         ).to_excel(writer, sheet_name="input_query", index=False)
 
-            for name, df in qry_sheets.items():
-                if df is not None and not df.empty:
-                    df.to_excel(writer, sheet_name=name, index=False)
+        query_rows.append({
+            "qid": qid,
+            "query": json.dumps(query, indent=2)
+        })
 
-        print(f"saved {out}")
+        for name, df in qry_sheets.items():
+            if df is not None and not df.empty:
+                df2 = df.assign(qid=qid, ARA=name)
+                all_results.append(df2)
+
+    df_results = pd.concat(all_results, ignore_index=True) if all_results else pd.DataFrame()
+    df_queries = pd.DataFrame(query_rows)
+
+    if not df_results.empty:
+        df_results = df_results[["qid", "ARA"] + [c for c in df_results.columns if c not in ("qid", "ARA")]]
+
+    with pd.ExcelWriter(out) as writer:
+        df_queries.to_excel(writer, sheet_name="input_query", index=False)
+        if not df_results.empty:
+            df_results.to_excel(writer, sheet_name="ARA_Ranker_Results", index=False)
+
+    print(f"saved {out}")
 
 
 if __name__ == "__main__":
@@ -93,7 +109,7 @@ if __name__ == "__main__":
                         default='data/test_queries/test_queries.json',
                         help='input file of test queries')
     parser.add_argument('--out_file', type=str, required=False,
-                        default='results/test_queries/ranker_comparison_{}.xlsx',
+                        default='results/test_queries/ranker_comparison_test_queries.xlsx',
                         help='output file pattern of test queries')
 
     args = parser.parse_args()
