@@ -57,7 +57,7 @@ def build_kg_maps(message):
 
 
 def compare_rankers(aragorn_data, arax_data):
-    if not aragorn_data or not aragorn_data:
+    if not aragorn_data or not arax_data:
         return None
     df_aragorn = extract_results(aragorn_data, "aragorn")
     df_arax = extract_results(arax_data, "arax")

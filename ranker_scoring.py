@@ -13,7 +13,7 @@ def run_query(payload, url="https://shepherd.renci.org/aragorn/query"):
     try:
         r.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        print(f"status code: {r.status_code}, HTTP error occurred: {e}")
+        print(f"status code: {r.status_code}, HTTP error occurred: {e} with url: {url} and payload: {payload}")
         return None
 
     return r.json()
