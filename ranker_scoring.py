@@ -7,10 +7,8 @@ headers = {
     "Content-Type": "application/json"
 }
 
-URL = "https://shepherd.renci.org/aragorn/query"
-
-def run_query(payload):
-    r = requests.post(URL, headers=headers, json=payload)
+def run_query(payload, url="https://shepherd.renci.org/aragorn/query"):
+    r = requests.post(url, headers=headers, json=payload)
 
     try:
         r.raise_for_status()
@@ -24,10 +22,10 @@ def run_query(payload):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='data/query3/aragorn_arax_score_query_no_direct_edges.json',
+                        default='data/query3/bte_aragorn_score_query_no_direct_edges.json',
                         help='input file of the workflow lookup response')
     parser.add_argument('--output_file', type=str, required=False,
-                        default='results/query3/shepherd_aragorn_arax_score_response_no_direct_edges.json',
+                        default='shepherd_bte_aragorn_score_response_no_direct_edges.json',
                         help='output file for the scored response')
 
     args = parser.parse_args()

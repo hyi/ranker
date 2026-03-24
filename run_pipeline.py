@@ -16,6 +16,12 @@ LOOKUP_WORKFLOWS = {
     "bte": "bte.lookup"
 }
 
+LOOKUP_URLS = {
+    "aragorn": "https://shepherd.renci.org/aragorn/query",
+    "arax": "https://shepherd.renci.org/arax/query",
+    "bte": "https://shepherd.renci.org/bte/query"
+}
+
 RANKER_WORKFLOWS = {
     "aragorn": [
         {"id": "aragorn.omnicorp"},
@@ -35,7 +41,7 @@ def process_query(qid, query):
             **query,
             "workflow": [{"id": LOOKUP_WORKFLOWS[ara]}]
         }
-        lookup_resp = run_query(lookup_payload)
+        lookup_resp = run_query(lookup_payload, url=LOOKUP_URLS[ara])
         if not lookup_resp:
             print('lookup_resp is empty')
             continue
