@@ -25,15 +25,21 @@ LOOKUP_URLS = {
 RANKER_WORKFLOWS = {
     "aragorn": [
         {"id": "aragorn.omnicorp"},
-        {"id": "aragorn.score"}
+        {"id": "aragorn.score"},
+        {"id": "sort_results_score"},
+        {"id": "filter_results_top_n", "parameters": {"max_results": 500}},
+        {"id": "filter_kgraph_orphans"},
     ],
     "arax": [
-        {"id": "arax.rank"}
+        {"id": "arax.rank"},
+        {"id": "sort_results_score"},
+        {"id": "filter_results_top_n", "parameters": {"max_results": 500}},
+        {"id": "filter_kgraph_orphans"},
     ]
 }
 
 
-def process_query(qid, query):
+def process_query(qid, query, expected_outputs):
     sheets = {}
     for ara in ARAS:
         print(f"{qid} lookup via {ara}")
@@ -62,33 +68,16 @@ def process_query(qid, query):
                 "message": filtered_message,
                 "workflow": RANKER_WORKFLOWS[ranker]
             }
-            ranker_responses[ranker] = run_query(payload)
+            response = run_query(payload)
+            ranker_responses[ranker] = response
 
-        df = compare_rankers(ranker_responses["aragorn"], ranker_responses["arax"])
+        df = compare_rankers(ranker_responses["aragorn"], ranker_responses["arax"], expected_outputs)
         sheets[f"{ara.upper()}_ARA"] = df
     return sheets
 
 
-def main(query_file, out):
-    with open(query_file) as f:
-        queries = json.load(f)
-
-    all_results = []
-    query_rows = []
-
-    for qid, query in enumerate(queries):
-        qry_sheets = process_query(qid, query)
-
-        query_rows.append({
-            "qid": qid,
-            "query": json.dumps(query, indent=2)
-        })
-
-        for name, df in qry_sheets.items():
-            if df is not None and not df.empty:
-                df2 = df.assign(qid=qid, ARA=name)
-                all_results.append(df2)
-
+def write_results(out, query_rows, all_results):
+    """Write current accumulated results to Excel, overwriting the previous checkpoint."""
     df_results = pd.concat(all_results, ignore_index=True) if all_results else pd.DataFrame()
     df_queries = pd.DataFrame(query_rows)
 
@@ -100,13 +89,74 @@ def main(query_file, out):
         if not df_results.empty:
             df_results.to_excel(writer, sheet_name="ARA_Ranker_Results", index=False)
 
-    print(f"saved {out}")
+    print(f"checkpoint saved to {out} ({len(query_rows)} queries, {len(all_results)} result frames)")
+
+
+def load_existing_results(out):
+    """Load previously saved results from an existing output file for resume support."""
+    out_path = Path(out)
+    if not out_path.exists():
+        return [], [], set()
+
+    print(f"found existing output at {out}, loading for resume...")
+    query_rows = []
+    all_results = []
+    completed_qids = set()
+
+    try:
+        df_queries = pd.read_excel(out, sheet_name="input_query")
+        for _, row in df_queries.iterrows():
+            query_rows.append({"qid": row["qid"], "query": row["query"]})
+            completed_qids.add(row["qid"])
+    except Exception as e:
+        print(f"warning: could not read input_query sheet: {e}")
+
+    try:
+        df_results = pd.read_excel(out, sheet_name="ARA_Ranker_Results")
+        if not df_results.empty:
+            all_results.append(df_results)
+    except Exception as e:
+        print(f"warning: could not read ARA_Ranker_Results sheet: {e}")
+
+    print(f"resuming — {len(completed_qids)} queries already completed: {sorted(completed_qids)}")
+    return query_rows, all_results, completed_qids
+
+
+def main(query_file, out):
+    with open(query_file) as f:
+        queries = json.load(f)
+
+    query_rows, all_results, completed_qids = load_existing_results(out)
+
+    for qid, query in enumerate(queries["queries"]):
+        if qid in completed_qids:
+            print(f"skipping qid {qid} (already completed)")
+            continue
+
+        expected_outputs = query["expected_outputs"]
+        query = query["trapi_query"]
+        qry_sheets = process_query(qid, query, expected_outputs)
+
+        query_rows.append({
+            "qid": qid,
+            "query": json.dumps(query, indent=2)
+        })
+
+        for name, df in qry_sheets.items():
+            if df is not None and not df.empty:
+                df2 = df.assign(qid=qid, ARA=name)
+                all_results.append(df2)
+
+        # Write after every query so partial results survive crashes/hangs
+        write_results(out, query_rows, all_results)
+
+    print(f"done — final output at {out}")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='data/test_queries/test_queries.json',
+                        default='trapi_queries.json',
                         help='input file of test queries')
     parser.add_argument('--out_file', type=str, required=False,
                         default='results/test_queries/ranker_comparison_test_queries.xlsx',

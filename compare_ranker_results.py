@@ -3,7 +3,7 @@ import json
 import pandas as pd
 
 
-def extract_results(json_data, ranker_name):
+def extract_results(json_data, ranker_name, expected_outputs):
     message = json_data["message"]
     node_name, edge_info = build_kg_maps(message)
 
@@ -20,7 +20,12 @@ def extract_results(json_data, ranker_name):
                     info = edge_info.get(eid, {})
                     for s in subject_ids:
                         for o in object_ids:
+                            expected_output_type = ""
+                            for expected_output in expected_outputs:
+                                if expected_output["output_id"] == o or expected_output["output_id"] == s:
+                                    expected_output_type = expected_output["expected_output"]
                             rows.append({
+                                "expected_output": expected_output_type,
                                 "subject_id": s,
                                 "subject_name": node_name.get(s, s),
                                 "object_id": o,
@@ -56,15 +61,16 @@ def build_kg_maps(message):
     return node_name, edge_info
 
 
-def compare_rankers(aragorn_data, arax_data):
+def compare_rankers(aragorn_data, arax_data, expected_outputs):
     if not aragorn_data or not arax_data:
         return None
-    df_aragorn = extract_results(aragorn_data, "aragorn")
-    df_arax = extract_results(arax_data, "arax")
+    df_aragorn = extract_results(aragorn_data, "aragorn", expected_outputs)
+    df_arax = extract_results(arax_data, "arax", expected_outputs)
     if df_aragorn.empty or df_arax.empty:
         return None
     merged = pd.merge(df_aragorn, df_arax,
                       on=[
+                          "expected_output",
                           "subject_id",
                           "object_id",
                           "edge_id",
@@ -77,7 +83,7 @@ def compare_rankers(aragorn_data, arax_data):
     merged["rank diff (aragorn-arax)"] = merged["aragorn_rank"] - merged["arax_rank"]
 
     merged = merged.sort_values("aragorn_rank")
-    desired_column_order = ['subject_id', 'subject_name', 'object_id', 'object_name',
+    desired_column_order = ['expected_output', 'subject_id', 'subject_name', 'object_id', 'object_name',
                             'predicate', 'aragorn_score', 'arax_score', 'aragorn_rank', 'arax_rank',
                             'rank diff (aragorn-arax)', 'edge_id']
     return merged[desired_column_order]
@@ -144,4 +150,3 @@ if __name__ == '__main__':
             df_combined.to_excel(writer, sheet_name="ARA_ranker_results", index=False)
 
     exit(0)
-
