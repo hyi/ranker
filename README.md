@@ -23,6 +23,7 @@ the row's `edge_id` as the edge identifier for reporting. By default it treats
 `TopAnswer` as a desirable label and `NeverShow` as an undesirable label. It reports:
 
 - `hits@k` as the number of labeled answers with `rank <= k`
+- precision and F1 using `TopAnswer` hits as true positives and `NeverShow` hits as false positives
 - TopAnswer sensitivity/recall in the top `k`
 - NeverShow specificity in the top `k`
 - pairwise per-query win counts between the two rankers
@@ -64,6 +65,7 @@ Current plot files include:
 
 - `topanswer_comparison.png`
 - `nevershow_comparison.png`
+- `f1_comparison.png`
 - `pairwise_wins.png`
 - `pairwise_win_margins.png`
 - `pairwise_win_margins_by_ara.png`
@@ -76,6 +78,13 @@ Plot notes:
 - `nevershow_comparison.png`
   - left panels show NeverShow `hits@k`
   - right panels show NeverShow specificity at `k`
+- `f1_comparison.png`
+  - left panels show precision at `k`
+  - right panels show F1 at `k`
+  - F1 is computed from:
+    - true positives = TopAnswer hits@k
+    - false positives = NeverShow hits@k
+    - false negatives = total TopAnswer edges minus TopAnswer hits@k
 - `pairwise_wins.png`
   - compares the two rankers per `(ARA, qid)` group
   - in the TopAnswer panel, larger hit counts win

@@ -311,16 +311,31 @@ def summarize_group_metrics(
         negative_hits = sum(
             1 for record in in_top_k if categories[id(record)] == "negative"
         )
+        false_negatives = total_positive - positive_hits
+        precision = (
+            positive_hits / (positive_hits + negative_hits)
+            if (positive_hits + negative_hits)
+            else None
+        )
+        positive_recall = positive_hits / total_positive if total_positive else None
+        f1 = (
+            2 * precision * positive_recall / (precision + positive_recall)
+            if precision is not None
+            and positive_recall is not None
+            and (precision + positive_recall)
+            else None
+        )
         summary[k] = {
             "top_k_size": len(in_top_k),
             "positive_hits": positive_hits,
             "negative_hits": negative_hits,
+            "false_negatives": false_negatives,
             "total_positive": total_positive,
             "total_negative": total_negative,
             "total_ambiguous": total_ambiguous,
-            "positive_recall": (
-                positive_hits / total_positive if total_positive else None
-            ),
+            "positive_recall": positive_recall,
+            "precision": precision,
+            "f1": f1,
             "negative_specificity": (
                 (total_negative - negative_hits) / total_negative
                 if total_negative
@@ -338,13 +353,18 @@ def empty_aggregate(ks: list[int]) -> dict[int, dict[str, object]]:
         k: {
             "positive_hits": 0,
             "negative_hits": 0,
+            "false_negatives": 0,
             "top_k_size": 0,
             "positive_totals": 0,
             "negative_totals": 0,
+            "precisions": [],
             "positive_recalls": [],
+            "f1_scores": [],
             "negative_specificities": [],
             "negative_exposures": [],
             "eligible_positive_groups": 0,
+            "eligible_precision_groups": 0,
+            "eligible_f1_groups": 0,
             "eligible_negative_groups": 0,
         }
         for k in ks
@@ -356,40 +376,49 @@ def finalize_aggregate_map(
 ) -> dict[int, dict[str, object]]:
     finalized = {}
     for k, metrics in aggregate.items():
+        tp = metrics["positive_hits"]
+        fp = metrics["negative_hits"]
+        fn = metrics["false_negatives"]
         positive_totals = metrics["positive_totals"]
         negative_totals = metrics["negative_totals"]
+        precision_micro = tp / (tp + fp) if (tp + fp) else None
+        recall_micro = tp / positive_totals if positive_totals else None
+        f1_micro = 2 * tp / (2 * tp + fp + fn) if (2 * tp + fp + fn) else None
         finalized[k] = {
-            "positive_hits": metrics["positive_hits"],
-            "negative_hits": metrics["negative_hits"],
+            "positive_hits": tp,
+            "negative_hits": fp,
+            "false_negatives": fn,
             "top_k_size": metrics["top_k_size"],
             "positive_totals": positive_totals,
             "negative_totals": negative_totals,
-            "positive_recall_micro": (
-                metrics["positive_hits"] / positive_totals if positive_totals else None
-            ),
+            "precision_micro": precision_micro,
+            "positive_recall_micro": recall_micro,
+            "f1_micro": f1_micro,
             "negative_specificity_micro": (
-                (negative_totals - metrics["negative_hits"]) / negative_totals
-                if negative_totals
-                else None
+                (negative_totals - fp) / negative_totals if negative_totals else None
             ),
             "negative_exposure_micro": (
-                metrics["negative_hits"] / negative_totals if negative_totals else None
+                fp / negative_totals if negative_totals else None
             ),
             "positive_hits_per_group_mean": (
-                metrics["positive_hits"] / metrics["eligible_positive_groups"]
+                tp / metrics["eligible_positive_groups"]
                 if metrics["eligible_positive_groups"]
                 else None
             ),
             "negative_hits_per_group_mean": (
-                metrics["negative_hits"] / metrics["eligible_negative_groups"]
+                fp / metrics["eligible_negative_groups"]
                 if metrics["eligible_negative_groups"]
                 else None
+            ),
+            "precision_macro": (
+                mean(metrics["precisions"]) if metrics["precisions"] else None
             ),
             "positive_recall_macro": (
                 mean(metrics["positive_recalls"])
                 if metrics["positive_recalls"]
                 else None
             ),
+            "f1_macro": mean(metrics["f1_scores"]) if metrics["f1_scores"] else None,
             "negative_specificity_macro": (
                 mean(metrics["negative_specificities"])
                 if metrics["negative_specificities"]
@@ -401,6 +430,8 @@ def finalize_aggregate_map(
                 else None
             ),
             "eligible_positive_groups": metrics["eligible_positive_groups"],
+            "eligible_precision_groups": metrics["eligible_precision_groups"],
+            "eligible_f1_groups": metrics["eligible_f1_groups"],
             "eligible_negative_groups": metrics["eligible_negative_groups"],
         }
     return finalized
@@ -524,12 +555,19 @@ def aggregate_metric_table(
                 target = overall[ranker][k]
                 target["positive_hits"] += metrics["positive_hits"]
                 target["negative_hits"] += metrics["negative_hits"]
+                target["false_negatives"] += metrics["false_negatives"]
                 target["top_k_size"] += metrics["top_k_size"]
                 target["positive_totals"] += metrics["total_positive"]
                 target["negative_totals"] += metrics["total_negative"]
+                if metrics["precision"] is not None:
+                    target["precisions"].append(metrics["precision"])
+                    target["eligible_precision_groups"] += 1
                 if metrics["positive_recall"] is not None:
                     target["positive_recalls"].append(metrics["positive_recall"])
                     target["eligible_positive_groups"] += 1
+                if metrics["f1"] is not None:
+                    target["f1_scores"].append(metrics["f1"])
+                    target["eligible_f1_groups"] += 1
                 if metrics["negative_specificity"] is not None:
                     target["negative_specificities"].append(
                         metrics["negative_specificity"]
@@ -540,12 +578,19 @@ def aggregate_metric_table(
                 ara_target = by_ara[ara][ranker][k]
                 ara_target["positive_hits"] += metrics["positive_hits"]
                 ara_target["negative_hits"] += metrics["negative_hits"]
+                ara_target["false_negatives"] += metrics["false_negatives"]
                 ara_target["top_k_size"] += metrics["top_k_size"]
                 ara_target["positive_totals"] += metrics["total_positive"]
                 ara_target["negative_totals"] += metrics["total_negative"]
+                if metrics["precision"] is not None:
+                    ara_target["precisions"].append(metrics["precision"])
+                    ara_target["eligible_precision_groups"] += 1
                 if metrics["positive_recall"] is not None:
                     ara_target["positive_recalls"].append(metrics["positive_recall"])
                     ara_target["eligible_positive_groups"] += 1
+                if metrics["f1"] is not None:
+                    ara_target["f1_scores"].append(metrics["f1"])
+                    ara_target["eligible_f1_groups"] += 1
                 if metrics["negative_specificity"] is not None:
                     ara_target["negative_specificities"].append(
                         metrics["negative_specificity"]
@@ -752,8 +797,8 @@ def print_metric_block(
     for ranker, by_k in metrics_by_ranker.items():
         print(f"  {ranker}")
         print(
-            "    k  pos_hits  pos_total  pos_recall_micro  pos_recall_macro  "
-            "neg_hits  neg_total  neg_specificity_micro  neg_specificity_macro"
+            "    k  pos_hits  neg_hits  precision_micro  recall_micro  f1_micro  "
+            "precision_macro  recall_macro  f1_macro"
         )
         for k in ks:
             row = by_k[k]
@@ -761,10 +806,21 @@ def print_metric_block(
                 "    "
                 f"{k:<3}"
                 f"{row['positive_hits']:<10}"
-                f"{row['positive_totals']:<11}"
-                f"{format_rate(row['positive_recall_micro']):<18}"
-                f"{format_rate(row['positive_recall_macro']):<18}"
                 f"{row['negative_hits']:<10}"
+                f"{format_rate(row['precision_micro']):<17}"
+                f"{format_rate(row['positive_recall_micro']):<14}"
+                f"{format_rate(row['f1_micro']):<10}"
+                f"{format_rate(row['precision_macro']):<17}"
+                f"{format_rate(row['positive_recall_macro']):<14}"
+                f"{format_rate(row['f1_macro'])}"
+            )
+        print("    Supplemental negative metrics")
+        print("    k  neg_total  neg_specificity_micro  neg_specificity_macro")
+        for k in ks:
+            row = by_k[k]
+            print(
+                "    "
+                f"{k:<3}"
                 f"{row['negative_totals']:<11}"
                 f"{format_rate(row['negative_specificity_micro']):<24}"
                 f"{format_rate(row['negative_specificity_macro'])}"
@@ -1308,6 +1364,22 @@ def generate_plots(
         figure_title="NeverShow Comparison Across Rankers",
     )
     output_files.append(str(nevershow_path))
+
+    f1_path = plot_dir / "f1_comparison.png"
+    save_metric_panels(
+        f1_path,
+        overall_metrics,
+        metrics_by_ara,
+        ks,
+        left_key="precision_micro",
+        left_title="Precision@k",
+        left_ylabel="Micro precision",
+        right_key="f1_micro",
+        right_title="F1@k",
+        right_ylabel="Micro F1",
+        figure_title="Precision and F1 Comparison Across Rankers",
+    )
+    output_files.append(str(f1_path))
 
     pairwise_path = plot_dir / "pairwise_wins.png"
     save_pairwise_wins_plot(pairwise_path, pairwise_overall, ks)
