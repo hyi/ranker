@@ -98,3 +98,56 @@ Plot notes:
   - `n=...` labels show how many winning groups contributed to that bar
 - `pairwise_win_margins_by_ara.png`
   - the same win-margin view, broken out by `ARA`
+
+## Diagnose and test simple ranker combinations
+
+Use `combine_rankers.py` to inspect how labeled `TopAnswer` and `NeverShow` edges are
+ranked by `ARAGORN_RANKER` and `ARAX_RANKER`, and to evaluate simple ranker-level
+hybrids before trying learned models.
+
+The script currently supports:
+
+- labeled rank diagnostics for `TopAnswer` and `NeverShow`
+- ARAX veto threshold sweeps applied on top of ARAGORN ordering
+- weighted reciprocal-rank fusion (`RRF`) between ARAGORN and ARAX ranks
+- comparison of these simple hybrids against the two baseline rankers using
+  `TopAnswer hits@k`, `NeverShow hits@k`, and `F1@k`
+
+Example:
+
+```bash
+python combine_rankers.py --workbook results/ranker_comparison_test_queries.xlsx
+```
+
+By default outputs are written under:
+
+```bash
+results/ranker_combination_outputs/
+```
+
+Current outputs include:
+
+- `labeled_rank_summary.csv`
+- `arax_veto_threshold_sweep.csv`
+- `method_summary_at_target_k.csv`
+- `combine_rankers_summary.json`
+- `labeled_rank_scatter.png`
+- `arax_veto_threshold_sweep.png`
+- `best_method_comparison.png`
+
+Output notes:
+
+- `labeled_rank_summary.csv`
+  - compares ARAGORN and ARAX rank distributions for labeled `TopAnswer` and
+    `NeverShow` edges overall and by `ARA`
+- `arax_veto_threshold_sweep.csv`
+  - shows how many `TopAnswer` and `NeverShow` edges would be vetoed at each ARAX
+    threshold, including within ARAGORN top-k regions
+- `method_summary_at_target_k.csv`
+  - ranks baseline and hybrid methods by performance at the target `k`
+- `labeled_rank_scatter.png`
+  - scatter plot of `ARAGORN_RANKER` rank vs `ARAX_RANKER` rank for labeled edges
+- `arax_veto_threshold_sweep.png`
+  - visual threshold tradeoff for ARAX veto strategies
+- `best_method_comparison.png`
+  - compares the best simple hybrid methods against the baseline rankers across `k`

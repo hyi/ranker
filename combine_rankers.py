@@ -1,0 +1,882 @@
+import argparse
+import csv
+import json
+import math
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+
+from analyze_ranker_metrics import (
+    DEFAULT_NEGATIVE_LABELS,
+    DEFAULT_POSITIVE_LABELS,
+    RANKER_COLORS,
+    EdgeRecord,
+    finalize_aggregate_map,
+    label_category,
+    load_edge_records,
+)
+
+
+BASELINE_METHODS = ("ARAGORN_RANKER", "ARAX_RANKER")
+ARA_COLORS = {
+    "ARAGORN_ARA": "#1f77b4",
+    "ARAX_ARA": "#ff7f0e",
+    "BTE_ARA": "#2ca02c",
+}
+DEFAULT_KS = [1, 3, 5, 10, 20, 50, 100]
+DEFAULT_VETO_THRESHOLDS = [5, 10, 20, 25, 50, 100]
+DEFAULT_RRF_WEIGHTS = [0.6, 0.7, 0.8, 0.9]
+DEFAULT_RRF_C_VALUES = [10, 20, 40, 50, 60]
+DEFAULT_ARAGORN_TOPK_DIAGNOSTICS = [10, 20]
+
+
+@dataclass(frozen=True)
+class MethodSpec:
+    name: str
+    kind: str
+    params: dict[str, float | int | str]
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Diagnose ARAGORN vs ARAX ranking behavior and evaluate simple ranker-level "
+            "hybrids such as ARAX vetoes and weighted reciprocal-rank fusion."
+        )
+    )
+    parser.add_argument(
+        "--workbook",
+        type=Path,
+        default=Path("results/ranker_comparison_test_queries.xlsx"),
+        help="Path to the comparison workbook.",
+    )
+    parser.add_argument(
+        "--sheet",
+        type=str,
+        default=None,
+        help="Results sheet name. If omitted, the script auto-detects it.",
+    )
+    parser.add_argument(
+        "--ks",
+        type=int,
+        nargs="+",
+        default=DEFAULT_KS,
+        help="Top-k cutoffs for method evaluation.",
+    )
+    parser.add_argument(
+        "--positive-labels",
+        nargs="+",
+        default=sorted(DEFAULT_POSITIVE_LABELS),
+        help="Labels treated as desirable edges.",
+    )
+    parser.add_argument(
+        "--negative-labels",
+        nargs="+",
+        default=sorted(DEFAULT_NEGATIVE_LABELS),
+        help="Labels treated as undesirable edges.",
+    )
+    parser.add_argument(
+        "--arax-veto-thresholds",
+        type=int,
+        nargs="+",
+        default=DEFAULT_VETO_THRESHOLDS,
+        help="Candidate ARAX rank thresholds for hard-veto methods.",
+    )
+    parser.add_argument(
+        "--rrf-aragorn-weights",
+        type=float,
+        nargs="+",
+        default=DEFAULT_RRF_WEIGHTS,
+        help="ARAGORN weights to try for reciprocal-rank fusion. ARAX weight is 1-w.",
+    )
+    parser.add_argument(
+        "--rrf-c-values",
+        type=int,
+        nargs="+",
+        default=DEFAULT_RRF_C_VALUES,
+        help="C constants to try in reciprocal-rank fusion score = w/(c+rank).",
+    )
+    parser.add_argument(
+        "--aragorn-diagnostic-topks",
+        type=int,
+        nargs="+",
+        default=DEFAULT_ARAGORN_TOPK_DIAGNOSTICS,
+        help="ARAGORN top-k windows to diagnose how many labeled edges ARAX veto would remove.",
+    )
+    parser.add_argument(
+        "--target-k",
+        type=int,
+        default=10,
+        help="Primary k used to select the best veto and RRF candidates.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("results/ranker_combination_outputs"),
+        help="Directory for plots and CSV/JSON outputs.",
+    )
+    return parser.parse_args()
+
+
+def empty_aggregate(ks: list[int]) -> dict[int, dict[str, object]]:
+    return {
+        k: {
+            "positive_hits": 0,
+            "negative_hits": 0,
+            "false_negatives": 0,
+            "top_k_size": 0,
+            "positive_totals": 0,
+            "negative_totals": 0,
+            "precisions": [],
+            "positive_recalls": [],
+            "f1_scores": [],
+            "negative_specificities": [],
+            "negative_exposures": [],
+            "eligible_positive_groups": 0,
+            "eligible_precision_groups": 0,
+            "eligible_f1_groups": 0,
+            "eligible_negative_groups": 0,
+        }
+        for k in ks
+    }
+
+
+def rank_map_for_method(
+    group_records: list[EdgeRecord],
+    method: MethodSpec,
+) -> dict[int, int | None]:
+    if method.kind == "baseline":
+        ranker_name = method.params["ranker_name"]
+        return {id(record): record.ranks[ranker_name] for record in group_records}
+
+    if method.kind == "arax_veto":
+        threshold = int(method.params["threshold"])
+
+        def sort_key(record: EdgeRecord):
+            aragorn_rank = record.ranks["ARAGORN_RANKER"]
+            arax_rank = record.ranks["ARAX_RANKER"]
+            vetoed = arax_rank is None or arax_rank > threshold
+            missing_aragorn = aragorn_rank is None
+            return (
+                1 if vetoed else 0,
+                1 if missing_aragorn else 0,
+                math.inf if aragorn_rank is None else aragorn_rank,
+                math.inf if arax_rank is None else arax_rank,
+                record.edge_id,  # tie-breaker to make output order deterministic
+            )
+
+        ordered = sorted(group_records, key=sort_key)
+        return {id(record): index for index, record in enumerate(ordered, start=1)}
+
+    if method.kind == "rrf":
+        aragorn_weight = float(method.params["aragorn_weight"])
+        arax_weight = 1.0 - aragorn_weight
+        c_value = int(method.params["c_value"])
+
+        def reciprocal(rank: int | None, weight: float) -> float:
+            if rank is None:
+                return 0.0
+            return weight / (c_value + rank)
+
+        def sort_key(record: EdgeRecord):
+            aragorn_rank = record.ranks["ARAGORN_RANKER"]
+            arax_rank = record.ranks["ARAX_RANKER"]
+            score = reciprocal(aragorn_rank, aragorn_weight) + reciprocal(
+                arax_rank, arax_weight
+            )
+            return (
+                -score,
+                math.inf if aragorn_rank is None else aragorn_rank,
+                math.inf if arax_rank is None else arax_rank,
+                record.edge_id,  # tie-breaker to make output order deterministic
+            )
+
+        ordered = sorted(group_records, key=sort_key)
+        return {id(record): index for index, record in enumerate(ordered, start=1)}
+
+    raise ValueError(f"Unsupported method kind: {method.kind}")
+
+
+def summarize_group_metrics(
+    group_records: list[EdgeRecord],
+    rank_map: dict[int, int | None],
+    ks: list[int],
+    positive_labels: set[str],
+    negative_labels: set[str],
+) -> dict[int, dict[str, float | int | None]]:
+    categories = {
+        id(record): label_category(record.labels, positive_labels, negative_labels)
+        for record in group_records
+    }
+    total_positive = sum(
+        1 for record in group_records if categories[id(record)] == "positive"
+    )
+    total_negative = sum(
+        1 for record in group_records if categories[id(record)] == "negative"
+    )
+
+    summary = {}
+    for k in ks:
+        in_top_k = [
+            record
+            for record in group_records
+            if rank_map.get(id(record)) is not None and rank_map[id(record)] <= k
+        ]
+        positive_hits = sum(
+            1 for record in in_top_k if categories[id(record)] == "positive"
+        )
+        negative_hits = sum(
+            1 for record in in_top_k if categories[id(record)] == "negative"
+        )
+        false_negatives = total_positive - positive_hits
+        precision = (
+            positive_hits / (positive_hits + negative_hits)
+            if (positive_hits + negative_hits)
+            else None
+        )
+        recall = positive_hits / total_positive if total_positive else None
+        f1 = (
+            2 * precision * recall / (precision + recall)
+            if precision is not None and recall is not None and (precision + recall)
+            else None
+        )
+        summary[k] = {
+            "top_k_size": len(in_top_k),
+            "positive_hits": positive_hits,
+            "negative_hits": negative_hits,
+            "false_negatives": false_negatives,
+            "total_positive": total_positive,
+            "total_negative": total_negative,
+            "precision": precision,
+            "positive_recall": recall,
+            "f1": f1,
+            "negative_specificity": (
+                (total_negative - negative_hits) / total_negative
+                if total_negative
+                else None
+            ),
+            "negative_exposure": (
+                negative_hits / total_negative if total_negative else None
+            ),
+        }
+    return summary
+
+
+def evaluate_methods(
+    records: list[EdgeRecord],
+    methods: list[MethodSpec],
+    ks: list[int],
+    positive_labels: set[str],
+    negative_labels: set[str],
+) -> tuple[
+    dict[str, dict[int, dict[str, object]]],
+    dict[str, dict[str, dict[int, dict[str, object]]]],
+]:
+    grouped: dict[tuple[str, int], list[EdgeRecord]] = defaultdict(list)
+    for record in records:
+        grouped[(record.ara, record.qid)].append(record)
+
+    overall = {method.name: empty_aggregate(ks) for method in methods}
+    by_ara = defaultdict(
+        lambda: {method.name: empty_aggregate(ks) for method in methods}
+    )
+
+    for (ara, _qid), group_records in grouped.items():
+        for method in methods:
+            rank_map = rank_map_for_method(group_records, method)
+            group_summary = summarize_group_metrics(
+                group_records, rank_map, ks, positive_labels, negative_labels
+            )
+            for k, metrics in group_summary.items():
+                for target in (overall[method.name][k], by_ara[ara][method.name][k]):
+                    target["positive_hits"] += metrics["positive_hits"]
+                    target["negative_hits"] += metrics["negative_hits"]
+                    target["false_negatives"] += metrics["false_negatives"]
+                    target["top_k_size"] += metrics["top_k_size"]
+                    target["positive_totals"] += metrics["total_positive"]
+                    target["negative_totals"] += metrics["total_negative"]
+                    if metrics["precision"] is not None:
+                        target["precisions"].append(metrics["precision"])
+                        target["eligible_precision_groups"] += 1
+                    if metrics["positive_recall"] is not None:
+                        target["positive_recalls"].append(metrics["positive_recall"])
+                        target["eligible_positive_groups"] += 1
+                    if metrics["f1"] is not None:
+                        target["f1_scores"].append(metrics["f1"])
+                        target["eligible_f1_groups"] += 1
+                    if metrics["negative_specificity"] is not None:
+                        target["negative_specificities"].append(
+                            metrics["negative_specificity"]
+                        )
+                        target["negative_exposures"].append(
+                            metrics["negative_exposure"]
+                        )
+                        target["eligible_negative_groups"] += 1
+
+    finalized_overall = {
+        method_name: finalize_aggregate_map(aggregate)
+        for method_name, aggregate in overall.items()
+    }
+    finalized_by_ara = {
+        ara: {
+            method_name: finalize_aggregate_map(aggregate)
+            for method_name, aggregate in methods_for_ara.items()
+        }
+        for ara, methods_for_ara in by_ara.items()
+    }
+    return finalized_overall, finalized_by_ara
+
+
+def build_method_specs(args: argparse.Namespace) -> list[MethodSpec]:
+    methods = [
+        MethodSpec(
+            name=ranker_name,
+            kind="baseline",
+            params={"ranker_name": ranker_name},
+        )
+        for ranker_name in BASELINE_METHODS
+    ]
+    for threshold in sorted(set(args.arax_veto_thresholds)):
+        methods.append(
+            MethodSpec(
+                name=f"ARAGORN_WITH_ARAX_FILTER_T{threshold}",
+                kind="arax_veto",
+                params={"threshold": threshold},
+            )
+        )
+    for weight in sorted(set(args.rrf_aragorn_weights)):
+        for c_value in sorted(set(args.rrf_c_values)):
+            methods.append(
+                MethodSpec(
+                    name=f"RRF_A{weight:.2f}_X{1.0 - weight:.2f}_C{c_value}",
+                    kind="rrf",
+                    params={"aragorn_weight": weight, "c_value": c_value},
+                )
+            )
+    return methods
+
+
+def safe_mean(values: list[int | float]) -> float | None:
+    if not values:
+        return None
+    return sum(values) / len(values)
+
+
+def format_rate(value: float | None) -> str:
+    if value is None:
+        return "NA"
+    return f"{value:.3f}"
+
+
+def labeled_records(
+    records: list[EdgeRecord],
+    positive_labels: set[str],
+    negative_labels: set[str],
+) -> list[tuple[EdgeRecord, str]]:
+    labeled = []
+    for record in records:
+        category = label_category(record.labels, positive_labels, negative_labels)
+        if category in {"positive", "negative"}:
+            labeled.append((record, category))
+    return labeled
+
+
+def build_labeled_rank_summary(
+    records: list[EdgeRecord],
+    positive_labels: set[str],
+    negative_labels: set[str],
+) -> list[dict[str, object]]:
+    rows = []
+    scopes = {"overall": records}
+    for ara in sorted({record.ara for record in records}):
+        scopes[ara] = [record for record in records if record.ara == ara]
+
+    for scope_name, scope_records in scopes.items():
+        labeled = labeled_records(scope_records, positive_labels, negative_labels)
+        for category_name in ("positive", "negative"):
+            selected = [
+                record for record, category in labeled if category == category_name
+            ]
+            aragorn_ranks = [
+                record.ranks["ARAGORN_RANKER"]
+                for record in selected
+                if record.ranks["ARAGORN_RANKER"] is not None
+            ]
+            arax_ranks = [
+                record.ranks["ARAX_RANKER"]
+                for record in selected
+                if record.ranks["ARAX_RANKER"] is not None
+            ]
+            row = {
+                "scope": scope_name,
+                "label": "TopAnswer" if category_name == "positive" else "NeverShow",
+                "count": len(selected),
+                "aragorn_mean_rank": safe_mean(aragorn_ranks),
+                "arax_mean_rank": safe_mean(arax_ranks),
+                "aragorn_median_rank": median_value(aragorn_ranks),
+                "arax_median_rank": median_value(arax_ranks),
+            }
+            for cutoff in (10, 20, 50, 100):
+                row[f"aragorn_rank_le_{cutoff}"] = sum(
+                    1 for value in aragorn_ranks if value <= cutoff
+                )
+                row[f"arax_rank_le_{cutoff}"] = sum(
+                    1 for value in arax_ranks if value <= cutoff
+                )
+            rows.append(row)
+    return rows
+
+
+def median_value(values: list[int | float]) -> float | None:
+    if not values:
+        return None
+    values_sorted = sorted(values)
+    size = len(values_sorted)
+    middle = size // 2
+    if size % 2:
+        return float(values_sorted[middle])
+    return (values_sorted[middle - 1] + values_sorted[middle]) / 2
+
+
+def build_arax_veto_threshold_sweep(
+    records: list[EdgeRecord],
+    thresholds: list[int],
+    aragorn_topks: list[int],
+    positive_labels: set[str],
+    negative_labels: set[str],
+) -> list[dict[str, object]]:
+    rows = []
+    scopes = {"overall": records}
+    for ara in sorted({record.ara for record in records}):
+        scopes[ara] = [record for record in records if record.ara == ara]
+
+    for scope_name, scope_records in scopes.items():
+        labeled = labeled_records(scope_records, positive_labels, negative_labels)
+        for threshold in thresholds:
+            row = {"scope": scope_name, "arax_veto_threshold": threshold}
+            for category_name, label_name in (
+                ("positive", "TopAnswer"),
+                ("negative", "NeverShow"),
+            ):
+                selected = [
+                    record for record, category in labeled if category == category_name
+                ]
+                vetoed = [
+                    record
+                    for record in selected
+                    if record.ranks["ARAX_RANKER"] is None
+                    or record.ranks["ARAX_RANKER"] > threshold
+                ]
+                row[f"{label_name}_count"] = len(selected)
+                row[f"{label_name}_vetoed_count"] = len(vetoed)
+                row[f"{label_name}_vetoed_rate"] = (
+                    len(vetoed) / len(selected) if selected else None
+                )
+                for topk in aragorn_topks:
+                    aragorn_front = [
+                        record
+                        for record in selected
+                        if record.ranks["ARAGORN_RANKER"] is not None
+                        and record.ranks["ARAGORN_RANKER"] <= topk
+                    ]
+                    aragorn_front_vetoed = [
+                        record
+                        for record in aragorn_front
+                        if record.ranks["ARAX_RANKER"] is None
+                        or record.ranks["ARAX_RANKER"] > threshold
+                    ]
+                    row[f"{label_name}_aragorn_top{topk}_count"] = len(aragorn_front)
+                    row[f"{label_name}_aragorn_top{topk}_vetoed_count"] = len(
+                        aragorn_front_vetoed
+                    )
+                    row[f"{label_name}_aragorn_top{topk}_vetoed_rate"] = (
+                        len(aragorn_front_vetoed) / len(aragorn_front)
+                        if aragorn_front
+                        else None
+                    )
+            rows.append(row)
+    return rows
+
+
+def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    if not rows:
+        path.write_text("", encoding="utf-8")
+        return
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def plot_labeled_rank_scatter(
+    records: list[EdgeRecord],
+    positive_labels: set[str],
+    negative_labels: set[str],
+    output_path: Path,
+) -> None:
+    labeled = labeled_records(records, positive_labels, negative_labels)
+    categories = [("positive", "TopAnswer"), ("negative", "NeverShow")]
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=False)
+
+    for ax, (category_name, title) in zip(axes, categories):
+        points = [record for record, category in labeled if category == category_name]
+        for ara in sorted({record.ara for record in points}):
+            ara_points = [record for record in points if record.ara == ara]
+            x = [
+                record.ranks["ARAGORN_RANKER"]
+                for record in ara_points
+                if record.ranks["ARAGORN_RANKER"] is not None
+                and record.ranks["ARAX_RANKER"] is not None
+            ]
+            y = [
+                record.ranks["ARAX_RANKER"]
+                for record in ara_points
+                if record.ranks["ARAGORN_RANKER"] is not None
+                and record.ranks["ARAX_RANKER"] is not None
+            ]
+            if not x:
+                continue
+            ax.scatter(
+                x,
+                y,
+                alpha=0.7,
+                s=28,
+                label=ara,
+                color=ARA_COLORS.get(ara),
+            )
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xlabel("ARAGORN rank")
+        ax.set_ylabel("ARAX rank")
+        ax.set_title(title)
+        ax.grid(alpha=0.3)
+        all_vals = [
+            value
+            for record in points
+            for value in (
+                record.ranks["ARAGORN_RANKER"],
+                record.ranks["ARAX_RANKER"],
+            )
+            if value is not None
+        ]
+        if all_vals:
+            lower = max(1, min(all_vals))
+            upper = max(all_vals)
+            # Set consistent axis limits to avoid extra log padding
+            ax.set_xlim(lower*0.95, upper * 1.05)
+            ax.set_ylim(lower, upper * 1.05)
+            ax.plot([lower, upper], [lower, upper], linestyle="--", color="black")
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.suptitle("Labeled Edge Rank Comparison", fontsize=14, y=0.985)
+    fig.text(
+        0.5,
+        0.94,
+        "Points below the diagonal are ranked better by ARAX; points above the diagonal are ranked better by ARAGORN.",
+        ha="center",
+        va="center",
+        fontsize=10,
+    )
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.91),
+        ncol=3,
+        frameon=False,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
+def plot_arax_veto_threshold_sweep(
+    threshold_rows: list[dict[str, object]],
+    aragorn_topks: list[int],
+    output_path: Path,
+) -> None:
+    overall_rows = [row for row in threshold_rows if row["scope"] == "overall"]
+    thresholds = [row["arax_veto_threshold"] for row in overall_rows]
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5), constrained_layout=False)
+
+    axes[0].plot(
+        thresholds,
+        [row["TopAnswer_vetoed_rate"] for row in overall_rows],
+        marker="o",
+        label="TopAnswer filtered",
+        color="#1f77b4",
+    )
+    axes[0].plot(
+        thresholds,
+        [row["NeverShow_vetoed_rate"] for row in overall_rows],
+        marker="o",
+        label="NeverShow filtered",
+        color="#d62728",
+    )
+    axes[0].set_title("Overall ARAX Filter Rate by Threshold")
+    axes[0].set_xlabel("ARAX filter threshold")
+    axes[0].set_ylabel("Fraction filtered")
+    axes[0].set_ylim(0, 1.05)
+    axes[0].grid(alpha=0.3)
+
+    for topk, color in zip(aragorn_topks, ("#2ca02c", "#9467bd"), strict=False):
+        axes[1].plot(
+            thresholds,
+            [row[f"TopAnswer_aragorn_top{topk}_vetoed_rate"] for row in overall_rows],
+            marker="o",
+            label=f"TopAnswer in ARAGORN top-{topk}",
+            color=color,
+        )
+        axes[1].plot(
+            thresholds,
+            [row[f"NeverShow_aragorn_top{topk}_vetoed_rate"] for row in overall_rows],
+            marker="o",
+            linestyle="--",
+            label=f"NeverShow in ARAGORN top-{topk}",
+            color=color,
+        )
+
+    axes[1].set_title("ARAX Filter Effect Within ARAGORN Front Of List")
+    axes[1].set_xlabel("ARAX filter threshold")
+    axes[1].set_ylabel("Fraction filtered")
+    axes[1].set_ylim(0, 1)
+    axes[1].grid(alpha=0.3)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    handles2, labels2 = axes[1].get_legend_handles_labels()
+    fig.suptitle("ARAX Filter Threshold Sweep", fontsize=14, y=0.985)
+    fig.legend(
+        handles + handles2,
+        labels + labels2,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.92),
+        ncol=3,
+        frameon=False,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.80))
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
+def build_method_summary_rows(
+    overall_metrics: dict[str, dict[int, dict[str, object]]],
+    target_k: int,
+) -> list[dict[str, object]]:
+    rows = []
+    for method_name, metrics_by_k in overall_metrics.items():
+        row = {"method": method_name, "target_k": target_k, **metrics_by_k[target_k]}
+        rows.append(row)
+    rows.sort(key=lambda row: (row["f1_micro"] is None, -(row["f1_micro"] or -1)))
+    return rows
+
+
+def select_best_methods(
+    methods: list[MethodSpec],
+    overall_metrics: dict[str, dict[int, dict[str, object]]],
+    target_k: int,
+) -> tuple[str | None, str | None]:
+    best_veto = None
+    best_rrf = None
+    best_veto_score = float("-inf")
+    best_rrf_score = float("-inf")
+
+    for method in methods:
+        score = overall_metrics[method.name][target_k]["f1_micro"]
+        if score is None:
+            continue
+        if method.kind == "arax_veto" and score > best_veto_score:
+            best_veto = method.name
+            best_veto_score = score
+        if method.kind == "rrf" and score > best_rrf_score:
+            best_rrf = method.name
+            best_rrf_score = score
+    return best_veto, best_rrf
+
+
+def plot_best_method_comparison(
+    overall_metrics: dict[str, dict[int, dict[str, object]]],
+    ks: list[int],
+    method_names: list[str],
+    output_path: Path,
+) -> None:
+    metric_specs = [
+        ("positive_hits", "TopAnswer hits@k", "TopAnswer hits"),
+        ("negative_hits", "NeverShow hits@k", "NeverShow hits"),
+        ("f1_micro", "F1@k", "Micro F1"),
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5), constrained_layout=False)
+    color_cycle = [
+        RANKER_COLORS["ARAGORN_RANKER"],
+        RANKER_COLORS["ARAX_RANKER"],
+        "#2ca02c",
+        "#9467bd",
+    ]
+
+    for method_name, color in zip(method_names, color_cycle, strict=False):
+        for ax, (metric_key, title, ylabel) in zip(axes, metric_specs, strict=False):
+            values = [overall_metrics[method_name][k][metric_key] for k in ks]
+            ax.plot(ks, values, marker="o", linewidth=2, label=method_name, color=color)
+            ax.set_title(title)
+            ax.set_xlabel("k")
+            ax.set_ylabel(ylabel)
+            ax.grid(alpha=0.3)
+            ax.set_xticks(ks)
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.suptitle("Best Simple Combination Methods Versus Baselines", fontsize=14, y=0.985)
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.92),
+        ncol=2,
+        frameon=False,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.80))
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
+def build_json_summary(
+    args: argparse.Namespace,
+    metadata: dict[str, object],
+    duplicate_report: list[dict[str, object]],
+    threshold_rows: list[dict[str, object]],
+    method_summary_rows: list[dict[str, object]],
+    best_veto: str | None,
+    best_rrf: str | None,
+    plot_files: list[str],
+) -> dict[str, object]:
+    return {
+        "workbook": str(args.workbook),
+        "sheet": metadata["sheet"],
+        "target_k": args.target_k,
+        "positive_labels": sorted(args.positive_labels),
+        "negative_labels": sorted(args.negative_labels),
+        "dataset_summary": metadata,
+        "duplicate_query_edge_ids": duplicate_report,
+        "arax_veto_threshold_sweep": threshold_rows,
+        "method_summary_at_target_k": method_summary_rows,
+        "best_veto_method": best_veto,
+        "best_rrf_method": best_rrf,
+        "plot_files": plot_files,
+    }
+
+
+def main() -> None:
+    args = parse_args()
+    ks = sorted(set(args.ks))
+    thresholds = sorted(set(args.arax_veto_thresholds))
+    aragorn_topks = sorted(set(args.aragorn_diagnostic_topks))
+    positive_labels = set(args.positive_labels)
+    negative_labels = set(args.negative_labels)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    records, metadata, duplicate_report = load_edge_records(args.workbook, args.sheet)
+    methods = build_method_specs(args)
+    overall_metrics, _ = evaluate_methods(
+        records, methods, ks, positive_labels, negative_labels
+    )
+
+    labeled_summary_rows = build_labeled_rank_summary(
+        records, positive_labels, negative_labels
+    )
+    threshold_rows = build_arax_veto_threshold_sweep(
+        records, thresholds, aragorn_topks, positive_labels, negative_labels
+    )
+    method_summary_rows = build_method_summary_rows(overall_metrics, args.target_k)
+    best_veto, best_rrf = select_best_methods(methods, overall_metrics, args.target_k)
+
+    labeled_summary_path = args.output_dir / "labeled_rank_summary.csv"
+    threshold_csv_path = args.output_dir / "arax_veto_threshold_sweep.csv"
+    method_summary_path = args.output_dir / "method_summary_at_target_k.csv"
+    summary_json_path = args.output_dir / "combine_rankers_summary.json"
+
+    write_csv(labeled_summary_path, labeled_summary_rows)
+    write_csv(threshold_csv_path, threshold_rows)
+    write_csv(method_summary_path, method_summary_rows)
+
+    plot_files = []
+    labeled_scatter_path = args.output_dir / "labeled_rank_scatter.png"
+    plot_labeled_rank_scatter(
+        records, positive_labels, negative_labels, labeled_scatter_path
+    )
+    plot_files.append(str(labeled_scatter_path))
+
+    veto_sweep_path = args.output_dir / "arax_veto_threshold_sweep.png"
+    plot_arax_veto_threshold_sweep(threshold_rows, aragorn_topks, veto_sweep_path)
+    plot_files.append(str(veto_sweep_path))
+
+    selected_methods = ["ARAGORN_RANKER", "ARAX_RANKER"]
+    if best_veto:
+        selected_methods.append(best_veto)
+    if best_rrf:
+        selected_methods.append(best_rrf)
+    best_methods_path = args.output_dir / "best_method_comparison.png"
+    plot_best_method_comparison(
+        overall_metrics, ks, selected_methods, best_methods_path
+    )
+    plot_files.append(str(best_methods_path))
+
+    summary_json_path.write_text(
+        json.dumps(
+            build_json_summary(
+                args,
+                metadata,
+                duplicate_report,
+                threshold_rows,
+                method_summary_rows,
+                best_veto,
+                best_rrf,
+                plot_files,
+            ),
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    print("Rank-combination diagnostics")
+    print(f"  Workbook: {args.workbook}")
+    print(f"  Output dir: {args.output_dir}")
+    print(
+        f"  Duplicate edge_ids within same qid: {metadata['duplicate_query_edge_ids']}"
+    )
+    print("  Best methods by overall F1 at target k")
+    for row in method_summary_rows[:8]:
+        print(
+            f"    {row['method']}: F1@{args.target_k}={format_rate(row['f1_micro'])} "
+            f"precision={format_rate(row['precision_micro'])} "
+            f"recall={format_rate(row['positive_recall_micro'])} "
+            f"TopAnswer_hits={row['positive_hits']} NeverShow_hits={row['negative_hits']}"
+        )
+
+    overall_threshold_rows = [
+        row for row in threshold_rows if row["scope"] == "overall"
+    ]
+    print("  ARAX veto threshold sweep (overall)")
+    for row in overall_threshold_rows:
+        print(
+            f"    T={row['arax_veto_threshold']}: "
+            f"TopAnswer_vetoed={format_rate(row['TopAnswer_vetoed_rate'])} "
+            f"NeverShow_vetoed={format_rate(row['NeverShow_vetoed_rate'])} "
+            f"TopAnswer_in_ARAGORN_top{aragorn_topks[0]}_vetoed="
+            f"{format_rate(row[f'TopAnswer_aragorn_top{aragorn_topks[0]}_vetoed_rate'])} "
+            f"NeverShow_in_ARAGORN_top{aragorn_topks[0]}_vetoed="
+            f"{format_rate(row[f'NeverShow_aragorn_top{aragorn_topks[0]}_vetoed_rate'])}"
+        )
+
+    print("  Output files")
+    print(f"    {labeled_summary_path}")
+    print(f"    {threshold_csv_path}")
+    print(f"    {method_summary_path}")
+    print(f"    {summary_json_path}")
+    for plot_file in plot_files:
+        print(f"    {plot_file}")
+
+
+if __name__ == "__main__":
+    main()
