@@ -697,10 +697,32 @@ def select_best_methods(
     return best_veto, best_rrf
 
 
+def interpolate_crossings(
+    xs: list[int], baseline: list[float], candidate: list[float]
+) -> list[tuple[float, float]]:
+    crossings = []
+    for index in range(len(xs) - 1):
+        x0, x1 = xs[index], xs[index + 1]
+        b0, b1 = baseline[index], baseline[index + 1]
+        c0, c1 = candidate[index], candidate[index + 1]
+        d0 = c0 - b0
+        d1 = c1 - b1
+        if d0 == 0:
+            crossings.append((float(x0), float(c0)))
+            continue
+        if d0 * d1 < 0:
+            fraction = -d0 / (d1 - d0)
+            x_cross = x0 + fraction * (x1 - x0)
+            y_cross = b0 + fraction * (b1 - b0)
+            crossings.append((x_cross, y_cross))
+    return crossings
+
+
 def plot_best_method_comparison(
     overall_metrics: dict[str, dict[int, dict[str, object]]],
     ks: list[int],
     method_names: list[str],
+    best_rrf_name: str | None,
     output_path: Path,
 ) -> None:
     metric_specs = [
@@ -725,6 +747,29 @@ def plot_best_method_comparison(
             ax.set_ylabel(ylabel)
             ax.grid(alpha=0.3)
             ax.set_xticks(ks)
+
+    if best_rrf_name and best_rrf_name in method_names:
+        f1_ax = axes[2]
+        aragorn_vals = [overall_metrics["ARAGORN_RANKER"][k]["f1_micro"] for k in ks]
+        rrf_vals = [overall_metrics[best_rrf_name][k]["f1_micro"] for k in ks]
+        if all(value is not None for value in aragorn_vals + rrf_vals):
+            crossings = interpolate_crossings(
+                ks,
+                [float(value) for value in aragorn_vals],
+                [float(value) for value in rrf_vals],
+            )
+            for cross_index, (x_cross, y_cross) in enumerate(crossings, start=1):
+                f1_ax.axvline(x_cross, color="#9467bd", linestyle="--", alpha=0.45)
+                f1_ax.scatter([x_cross], [y_cross], color="#9467bd", s=36, zorder=5)
+                f1_ax.annotate(
+                    f"cross k={x_cross:.1f}",
+                    xy=(x_cross, y_cross),
+                    xytext=(x_cross - 18, y_cross + 0.04 + 0.03 * (cross_index - 1)),
+                    textcoords="data",
+                    arrowprops={"arrowstyle": "->", "color": "#9467bd", "lw": 1},
+                    fontsize=9,
+                    color="#9467bd",
+                )
 
     handles, labels = axes[0].get_legend_handles_labels()
     fig.suptitle("Best Simple Combination Methods Versus Baselines", fontsize=14, y=0.985)
@@ -818,7 +863,7 @@ def main() -> None:
         selected_methods.append(best_rrf)
     best_methods_path = args.output_dir / "best_method_comparison.png"
     plot_best_method_comparison(
-        overall_metrics, ks, selected_methods, best_methods_path
+        overall_metrics, ks, selected_methods, best_rrf, best_methods_path
     )
     plot_files.append(str(best_methods_path))
 
