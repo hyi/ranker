@@ -575,7 +575,7 @@ def plot_labeled_rank_scatter(
     fig.text(
         0.5,
         0.94,
-        "Points below the diagonal are ranked better by ARAX; points above the diagonal are ranked better by ARAGORN.",
+        "Points below the diagonal are ranked higher by ARAX; points above the diagonal are ranked higher by ARAGORN.",
         ha="center",
         va="center",
         fontsize=10,
