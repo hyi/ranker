@@ -119,10 +119,24 @@ Example:
 python combine_rankers.py --workbook results/ranker_comparison_test_queries.xlsx
 ```
 
+To restrict the diagnostics and hybrid evaluation to `ARAX_ARA` generated edges only:
+
+```bash
+python combine_rankers.py \
+  --workbook results/ranker_comparison_test_queries.xlsx \
+  --arax-ara-only
+```
+
 By default outputs are written under:
 
 ```bash
 results/ranker_combination_outputs/
+```
+
+When `--arax-ara-only` is used, outputs default to:
+
+```bash
+results/ranker_combination_outputs_arax_ara_only/
 ```
 
 Current outputs include:
