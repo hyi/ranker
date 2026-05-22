@@ -7,7 +7,6 @@ from ranker_scoring import run_query
 from compare_ranker_results import compare_rankers
 
 
-ARAS = ["aragorn", "arax", "bte"]
 RANKERS = ["aragorn", "arax"]
 
 LOOKUP_WORKFLOWS = {
@@ -39,9 +38,14 @@ RANKER_WORKFLOWS = {
 }
 
 
-def process_query(qid, query, expected_outputs):
+def process_query(qid, query, expected_outputs, arax_only):
     sheets = {}
-    for ara in ARAS:
+    if arax_only:
+        aras = ["arax"]
+    else:
+        aras = ["aragorn", "arax", "bte"]
+
+    for ara in aras:
         print(f"{qid} lookup via {ara}")
         lookup_payload = {
             **query,
@@ -64,13 +68,22 @@ def process_query(qid, query, expected_outputs):
 
         for ranker in RANKERS:
             print(f"  scoring with {ranker}")
+
+            if arax_only:
+                # need to remove {"id": "sort_results_score"} from the workflow so that bespoken RARX ranker type
+                # can be applied rather than the generic ARAX ranker type
+                remove_item = {"id": "sort_results_score"}
+                wf = RANKER_WORKFLOWS[ranker].remove(remove_item)
+            else:
+                wf = RANKER_WORKFLOWS[ranker]
+
             payload = {
                 "message": filtered_message,
-                "workflow": RANKER_WORKFLOWS[ranker]
+                "workflow": wf
             }
             response = run_query(payload)
+            # TO DO: need to sort results score for response with ARAX only option
             ranker_responses[ranker] = response
-
         df = compare_rankers(ranker_responses["aragorn"], ranker_responses["arax"], expected_outputs)
         sheets[f"{ara.upper()}_ARA"] = df
     return sheets
@@ -122,7 +135,7 @@ def load_existing_results(out):
     return query_rows, all_results, completed_qids
 
 
-def main(query_file, out):
+def main(query_file, out, arax_only):
     with open(query_file) as f:
         queries = json.load(f)
 
@@ -135,7 +148,7 @@ def main(query_file, out):
 
         expected_outputs = query["expected_outputs"]
         query = query["trapi_query"]
-        qry_sheets = process_query(qid, query, expected_outputs)
+        qry_sheets = process_query(qid, query, expected_outputs, arax_only)
 
         query_rows.append({
             "qid": qid,
@@ -161,9 +174,11 @@ if __name__ == "__main__":
     parser.add_argument('--out_file', type=str, required=False,
                         default='results/arax_bespoke_ranker/ranker_comparison_test_queries.xlsx',
                         help='output file pattern of test queries')
+    parser.add_argument("--arax_ara_only", action="store_true",
+                        help='run the pipeline with ARAX ARA only')
 
     args = parser.parse_args()
-    input_file = args.input_file
-    out_file = args.out_file
-    Path(out_file).parent.mkdir(parents=True, exist_ok=True)
-    main(input_file, out_file)
+
+    Path(args.out_file).parent.mkdir(parents=True, exist_ok=True)
+
+    main(args.input_file, args.out_file, args.arax_ara_only)
