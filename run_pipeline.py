@@ -156,10 +156,10 @@ def main(query_file, out):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='trapi_queries.json',
+                        default='data/test_queries/sprint_6_tests.json',
                         help='input file of test queries')
     parser.add_argument('--out_file', type=str, required=False,
-                        default='results/test_queries/ranker_comparison_test_queries.xlsx',
+                        default='results/arax_bespoke_ranker/ranker_comparison_test_queries.xlsx',
                         help='output file pattern of test queries')
 
     args = parser.parse_args()

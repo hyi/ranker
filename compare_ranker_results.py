@@ -114,19 +114,19 @@ if __name__ == '__main__':
         aragorn_data = json.load(f)
     with open(input_file.format('aragorn', 'arax')) as f:
         arax_data = json.load(f)
-    df_aragorn = compare_rankers(aragorn_data, arax_data)
+    df_aragorn = compare_rankers(aragorn_data, arax_data, '')
 
     with open(input_file.format('arax', 'aragorn')) as f:
         aragorn_data = json.load(f)
     with open(input_file.format('arax', 'arax')) as f:
         arax_data = json.load(f)
-    df_arax = compare_rankers(aragorn_data, arax_data)
+    df_arax = compare_rankers(aragorn_data, arax_data, '')
 
     with open(input_file.format('bte', 'aragorn')) as f:
         aragorn_data = json.load(f)
     with open(input_file.format('bte', 'arax')) as f:
         arax_data = json.load(f)
-    df_bte = compare_rankers(aragorn_data, arax_data)
+    df_bte = compare_rankers(aragorn_data, arax_data, '')
 
     dfs = []
     if not df_aragorn.empty:
