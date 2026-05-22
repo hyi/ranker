@@ -37,6 +37,7 @@ RANKER_WORKFLOWS = {
     ]
 }
 
+ARAX_URL = 'https://arax.ci.transltr.io/api/arax/v1.4/query'
 
 def process_query(qid, query, expected_outputs, arax_only):
     sheets = {}
@@ -70,18 +71,18 @@ def process_query(qid, query, expected_outputs, arax_only):
             print(f"  scoring with {ranker}")
 
             if arax_only:
-                # need to remove {"id": "sort_results_score"} from the workflow so that bespoken RARX ranker type
-                # can be applied rather than the generic ARAX ranker type
-                remove_item = {"id": "sort_results_score"}
-                wf = RANKER_WORKFLOWS[ranker].remove(remove_item)
+                payload = {
+                    "message": filtered_message,
+                    "submitter": "ranker_comparison",
+                    "stream_progress": True
+                }
+                response = run_query(payload, url=ARAX_URL)
             else:
-                wf = RANKER_WORKFLOWS[ranker]
-
-            payload = {
-                "message": filtered_message,
-                "workflow": wf
-            }
-            response = run_query(payload)
+                payload = {
+                    "message": filtered_message,
+                    "workflow": RANKER_WORKFLOWS[ranker]
+                }
+                response = run_query(payload)
             # TO DO: need to sort results score for response with ARAX only option
             ranker_responses[ranker] = response
         df = compare_rankers(ranker_responses["aragorn"], ranker_responses["arax"], expected_outputs)
