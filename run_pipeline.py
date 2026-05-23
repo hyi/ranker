@@ -2,7 +2,7 @@ import json
 import argparse
 import pandas as pd
 from pathlib import Path
-from create_ranker_query_data import filter_trapi_message
+from create_ranker_query_data import filter_trapi_message, annotate_trapi_edges
 from ranker_scoring import run_query
 from compare_ranker_results import compare_rankers
 
@@ -64,20 +64,22 @@ def process_query(qid, query, expected_outputs, arax_only):
             print(f"knowledge_graph key is not in response message: {lookup_resp['message']}")
             continue
 
-        filtered_message = filter_trapi_message(lookup_resp["message"])
         ranker_responses = {}
 
         for ranker in RANKERS:
             print(f"  scoring with {ranker}")
 
             if arax_only:
+                annotated_message = annotate_trapi_edges(lookup_resp["message"])
                 payload = {
-                    "message": filtered_message,
+                    # don't filter out direct edges, but annotate edges for downstream filtering as needed
+                    "message": annotated_message,
                     "submitter": "ranker_comparison",
                     "stream_progress": True
                 }
                 response = run_query(payload, url=ARAX_URL)
             else:
+                filtered_message = filter_trapi_message(lookup_resp["message"])
                 payload = {
                     "message": filtered_message,
                     "workflow": RANKER_WORKFLOWS[ranker]
@@ -170,10 +172,10 @@ def main(query_file, out, arax_only):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='data/test_queries/sprint_6_tests.json',
+                        default='data/test_queries/trapi_queries_subset.json',
                         help='input file of test queries')
     parser.add_argument('--out_file', type=str, required=False,
-                        default='results/arax_bespoke_ranker/ranker_comparison_test_queries.xlsx',
+                        default='results/arax_bespoke_ranker/ranker_comparison_test_queries_subset.xlsx',
                         help='output file pattern of test queries')
     parser.add_argument("--arax_ara_only", action="store_true",
                         help='run the pipeline with ARAX ARA only')
@@ -181,5 +183,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     Path(args.out_file).parent.mkdir(parents=True, exist_ok=True)
-
     main(args.input_file, args.out_file, args.arax_ara_only)

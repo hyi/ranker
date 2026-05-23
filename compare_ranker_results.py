@@ -17,6 +17,10 @@ def extract_results(json_data, ranker_name, expected_outputs):
             for bindings in edge_bindings.values():
                 for b in bindings:
                     eid = b["id"]
+                    if "is_direct_edge" in b:
+                        is_direct_edge = b['is_direct_edge']
+                    else:
+                        is_direct_edge = None
                     info = edge_info.get(eid, {})
                     for s in subject_ids:
                         for o in object_ids:
@@ -24,7 +28,7 @@ def extract_results(json_data, ranker_name, expected_outputs):
                             for expected_output in expected_outputs:
                                 if expected_output["output_id"] == o or expected_output["output_id"] == s:
                                     expected_output_type = expected_output["expected_output"]
-                            rows.append({
+                            item_to_append = {
                                 "expected_output": expected_output_type,
                                 "subject_id": s,
                                 "subject_name": node_name.get(s, s),
@@ -33,7 +37,10 @@ def extract_results(json_data, ranker_name, expected_outputs):
                                 "predicate": info.get("predicate"),
                                 "edge_id": eid,
                                 f"{ranker_name}_score": score
-                            })
+                            }
+                            if is_direct_edge is not None:
+                                item_to_append["is_direct_edge"] = is_direct_edge
+                            rows.append(item_to_append)
 
     df = pd.DataFrame(rows)
     # rank descending (higher score = better)
@@ -68,6 +75,7 @@ def compare_rankers(aragorn_data, arax_data, expected_outputs):
     df_arax = extract_results(arax_data, "arax", expected_outputs)
     if df_aragorn.empty or df_arax.empty:
         return None
+
     merged = pd.merge(df_aragorn, df_arax,
                       on=[
                           "expected_output",
@@ -86,6 +94,19 @@ def compare_rankers(aragorn_data, arax_data, expected_outputs):
     desired_column_order = ['expected_output', 'subject_id', 'subject_name', 'object_id', 'object_name',
                             'predicate', 'aragorn_score', 'arax_score', 'aragorn_rank', 'arax_rank',
                             'rank diff (aragorn-arax)', 'edge_id']
+    if "is_direct_edge_x" and "is_direct_edge_y" in merged.columns:
+        mismatch = (
+                merged["is_direct_edge_x"].notna()
+                & merged["is_direct_edge_y"].notna()
+                & (merged["is_direct_edge_x"] != merged["is_direct_edge_y"])
+        )
+        if mismatch.any():
+            print(f"WARNING: found {mismatch.sum()} rows where is_direct_edge_x != is_direct_edge_y")
+            print(merged.loc[mismatch, ["edge_id"]])
+        else:
+            merged["is_direct_edge"] = merged["is_direct_edge_x"]
+            desired_column_order.append("is_direct_edge")
+
     return merged[desired_column_order]
 
 

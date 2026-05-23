@@ -2,6 +2,41 @@ import argparse
 import json
 
 
+def _get_support_edges(input_edges):
+    """
+    return support edges identified by "biolink:support_graphs" attribute from input_edges
+    """
+    support_edges = set()
+    for eid, edge in input_edges.items():
+        attrs = edge.get("attributes", [])
+        for attr in attrs:
+            if attr.get("attribute_type_id") == "biolink:support_graphs":
+                support_edges.add(eid)
+                break
+    return support_edges
+
+
+def annotate_trapi_edges(message):
+    """
+    Annotate each TRAPI edge binding in results with an `is_direct_edge` flag, which is set to True
+    when the result edge binding contains no support edges, and set to False otherwise.
+    """
+    kg = message["knowledge_graph"]
+    edges = kg["edges"]
+
+    supported_edges = _get_support_edges(edges)
+
+    print(f'annotating {len(message["results"])} results')
+    for result in message["results"]:
+        for analysis in result.get("analyses", []):
+            edge_bindings = analysis.get("edge_bindings", {})
+            for key, bindings in edge_bindings.items():
+                for b in bindings:
+                    b["is_direct_edge"] = b["id"] not in supported_edges
+
+    return message
+
+
 def filter_trapi_message(message):
     kg = message["knowledge_graph"]
 
@@ -9,14 +44,7 @@ def filter_trapi_message(message):
     nodes = kg["nodes"]
 
     # determine supported edges
-    supported_edges = set()
-
-    for eid, edge in edges.items():
-        attrs = edge.get("attributes", [])
-        for attr in attrs:
-            if attr.get("attribute_type_id") == "biolink:support_graphs":
-                supported_edges.add(eid)
-                break
+    supported_edges = _get_support_edges(edges)
 
     referenced_edges = set()
     new_results = []
