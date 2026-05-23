@@ -116,6 +116,7 @@ def build_trapi_query(test_case, input_id):
 
 def main():
     input_file = sys.argv[1] if len(sys.argv) > 1 else "sprint_6_tests.json"
+    out_file = sys.argv[2] if len(sys.argv) > 2 else "trapi_queries.json"
 
     with open(input_file) as f:
         data = json.load(f)
@@ -162,7 +163,6 @@ def main():
 
     # Write out the queries
     output = {"queries": results}
-    out_file = "trapi_queries.json"
     with open(out_file, "w") as f:
         json.dump(output, f, indent=2)
 
