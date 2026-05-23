@@ -37,7 +37,8 @@ RANKER_WORKFLOWS = {
     ]
 }
 
-ARAX_URL = 'https://arax.ci.transltr.io/api/arax/v1.4/query'
+# ARAX_URL = 'https://arax.ci.transltr.io/api/arax/v1.4/query'
+ARAX_URL = 'https://arax.ncats.io/shepherd/api/arax/v1.4/query'
 
 def process_query(qid, query, expected_outputs, arax_only):
     sheets = {}
@@ -74,9 +75,9 @@ def process_query(qid, query, expected_outputs, arax_only):
                 payload = {
                     # don't filter out direct edges, but annotate edges for downstream filtering as needed
                     "message": annotated_message,
-                    "submitter": "ranker_comparison",
-                    "stream_progress": True
+                    "submitter": "ranker_comparison"
                 }
+                print(f'payload: {payload}')
                 response = run_query(payload, url=ARAX_URL)
             else:
                 filtered_message = filter_trapi_message(lookup_resp["message"])
@@ -172,10 +173,10 @@ def main(query_file, out, arax_only):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process arguments.')
     parser.add_argument('--input_file', type=str, required=False,
-                        default='data/test_queries/trapi_queries_subset.json',
+                        default='data/test_queries/trapi_queries.json',
                         help='input file of test queries')
     parser.add_argument('--out_file', type=str, required=False,
-                        default='results/arax_bespoke_ranker/ranker_comparison_test_queries_subset.xlsx',
+                        default='results/arax_bespoke_ranker/ranker_comparison_test_queries.xlsx',
                         help='output file pattern of test queries')
     parser.add_argument("--arax_ara_only", action="store_true",
                         help='run the pipeline with ARAX ARA only')
