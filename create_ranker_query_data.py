@@ -8,7 +8,7 @@ def _get_support_edges(input_edges):
     """
     support_edges = set()
     for eid, edge in input_edges.items():
-        attrs = edge.get("attributes", [])
+        attrs = edge.get("attributes", []) if edge else []
         for attr in attrs:
             if attr.get("attribute_type_id") == "biolink:support_graphs":
                 support_edges.add(eid)

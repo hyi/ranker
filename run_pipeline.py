@@ -8,6 +8,7 @@ from compare_ranker_results import compare_rankers
 
 
 RANKERS = ["aragorn", "arax"]
+ARAS = ["aragorn", "arax", "bte"]
 
 LOOKUP_WORKFLOWS = {
     "aragorn": "aragorn.lookup",
@@ -37,23 +38,17 @@ RANKER_WORKFLOWS = {
     ]
 }
 
-# ARAX_URL = 'https://arax.ci.transltr.io/api/arax/v1.4/query'
-ARAX_URL = 'https://arax.ncats.io/shepherd/api/arax/v1.4/query'
-
-def process_query(qid, query, expected_outputs, arax_only):
+def process_query(qid, query, expected_outputs):
     sheets = {}
-    if arax_only:
-        aras = ["arax"]
-    else:
-        aras = ["aragorn", "arax", "bte"]
 
-    for ara in aras:
+    for ara in ARAS:
         print(f"{qid} lookup via {ara}")
         lookup_payload = {
             **query,
             "workflow": [{"id": LOOKUP_WORKFLOWS[ara]}]
         }
         lookup_resp = run_query(lookup_payload, url=LOOKUP_URLS[ara])
+        print(f'query URL: {LOOKUP_URLS[ara]}')
         if not lookup_resp:
             print('lookup_resp is empty')
             continue
@@ -70,22 +65,12 @@ def process_query(qid, query, expected_outputs, arax_only):
         for ranker in RANKERS:
             print(f"  scoring with {ranker}")
 
-            if arax_only:
-                annotated_message = annotate_trapi_edges(lookup_resp["message"])
-                payload = {
-                    # don't filter out direct edges, but annotate edges for downstream filtering as needed
-                    "message": annotated_message,
-                    "submitter": "ranker_comparison"
-                }
-                print(f'payload: {payload}')
-                response = run_query(payload, url=ARAX_URL)
-            else:
-                filtered_message = filter_trapi_message(lookup_resp["message"])
-                payload = {
-                    "message": filtered_message,
-                    "workflow": RANKER_WORKFLOWS[ranker]
-                }
-                response = run_query(payload)
+            filtered_message = filter_trapi_message(lookup_resp["message"])
+            payload = {
+                "message": filtered_message,
+                "workflow": RANKER_WORKFLOWS[ranker]
+            }
+            response = run_query(payload)
             # TO DO: need to sort results score for response with ARAX only option
             ranker_responses[ranker] = response
         df = compare_rankers(ranker_responses["aragorn"], ranker_responses["arax"], expected_outputs)
@@ -139,7 +124,7 @@ def load_existing_results(out):
     return query_rows, all_results, completed_qids
 
 
-def main(query_file, out, arax_only):
+def main(query_file, out):
     with open(query_file) as f:
         queries = json.load(f)
 
@@ -152,7 +137,7 @@ def main(query_file, out, arax_only):
 
         expected_outputs = query["expected_outputs"]
         query = query["trapi_query"]
-        qry_sheets = process_query(qid, query, expected_outputs, arax_only)
+        qry_sheets = process_query(qid, query, expected_outputs)
 
         query_rows.append({
             "qid": qid,
@@ -176,12 +161,10 @@ if __name__ == "__main__":
                         default='data/test_queries/trapi_queries.json',
                         help='input file of test queries')
     parser.add_argument('--out_file', type=str, required=False,
-                        default='results/arax_bespoke_ranker/ranker_comparison_test_queries.xlsx',
+                        default='results/arax_generic_ranker/ranker_comparison_test_queries.xlsx',
                         help='output file pattern of test queries')
-    parser.add_argument("--arax_ara_only", action="store_true",
-                        help='run the pipeline with ARAX ARA only')
 
     args = parser.parse_args()
 
     Path(args.out_file).parent.mkdir(parents=True, exist_ok=True)
-    main(args.input_file, args.out_file, args.arax_ara_only)
+    main(args.input_file, args.out_file)

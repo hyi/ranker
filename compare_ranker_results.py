@@ -12,7 +12,8 @@ def extract_results(json_data, ranker_name, expected_outputs):
         subject_ids = [x["id"] for x in r["node_bindings"].get("SN", [])]
         object_ids = [x["id"] for x in r["node_bindings"].get("ON", [])]
         for analysis in r.get("analyses", []):
-            score = round(analysis.get("score", 0), 3)
+            score = analysis.get("score", None)
+            score =  round(score, 3) if score is not None else 0
             edge_bindings = analysis.get("edge_bindings", {})
             for bindings in edge_bindings.values():
                 for b in bindings:
