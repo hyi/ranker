@@ -69,7 +69,7 @@ def build_kg_maps(message):
     return node_name, edge_info
 
 
-def compare_rankers(aragorn_data, arax_data, expected_outputs):
+def compare_rankers(aragorn_data, arax_data, expected_outputs, sort_by='aragorn_rank'):
     if not aragorn_data or not arax_data:
         return None
     df_aragorn = extract_results(aragorn_data, "aragorn", expected_outputs)
@@ -91,7 +91,7 @@ def compare_rankers(aragorn_data, arax_data, expected_outputs):
 
     merged["rank diff (aragorn-arax)"] = merged["aragorn_rank"] - merged["arax_rank"]
 
-    merged = merged.sort_values("aragorn_rank")
+    merged = merged.sort_values(sort_by)
     desired_column_order = ['expected_output', 'subject_id', 'subject_name', 'object_id', 'object_name',
                             'predicate', 'aragorn_score', 'arax_score', 'aragorn_rank', 'arax_rank',
                             'rank diff (aragorn-arax)', 'edge_id']
