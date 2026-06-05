@@ -29,11 +29,15 @@ def process_query(qid:int, query:dict, expected_outputs:str):
     }
     resp = run_query(payload, url=ARAX_URL)
     if not resp:
-        raise Exception('ARAX response is empty')
+        print(f'Skipping this query with payload: {payload} since ARAX response is empty')
+        return sheets
     if "message" not in resp:
-        raise Exception(f'ARAX resp does not contain message key: {resp}')
+        print(f'Skipping this query with payload: {payload} since ARAX resp does not contain message key: {resp}')
+        return sheets
     if not "results" in resp["message"]:
-        raise Exception(f"knowledge_graph key is not in response message: {resp['message']}")
+        print(f"Skipping this query with payload: {payload} since knowledge_graph key is not in response "
+              f"message: {resp['message']}")
+        return sheets
 
     annotated_message = annotate_trapi_edges(resp["message"])
     ranker_responses = {
@@ -84,17 +88,10 @@ def main(query_file, out):
         expected_outputs = query["expected_outputs"]
         query = query["trapi_query"]
 
-        # only test with "treats" MVP1 query for now before ARAX MVP2 approaches are ready
-        edges = query["message"]["query_graph"]["edges"]
-        is_treat_edge = False
-        for eid, edge in edges.items():
-            if "biolink:treats" in edge["predicates"]:
-                is_treat_edge = True
-                break
-        if not is_treat_edge:
-            continue
-
         qry_sheets = process_query(qid, query, expected_outputs)
+        if not qry_sheets:
+            # skipping this query
+            continue
 
         query_rows.append({
             "qid": qid,
