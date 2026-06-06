@@ -35,6 +35,16 @@ the row's `edge_id` as the edge identifier for reporting. By default it treats
 - duplicate `edge_id` checks within the same `qid`
 - PNG plots showing overall and per-ARA comparisons
 
+If the workbook contains an `is_direct_edge` column, the script automatically emits two
+result sets:
+
+- `all`: all edge rows included
+- `indirect`: only rows with `is_direct_edge = 0`
+
+These are written into `all/` and `indirect/` subfolders under the plot output
+directory. Older workbooks without `is_direct_edge` keep the original single-output
+behavior.
+
 The script uses the rank-based definition of top-k throughout:
 
 - an edge is counted in top `k` if its rank is `<= k`
@@ -66,6 +76,13 @@ By default plots are written under:
 results/ranker_comparison_test_queries_plots/
 ```
 
+For workbooks with `is_direct_edge`, plots are written under:
+
+```bash
+results/<workbook_folder>/ranker_comparison_test_queries_plots/all/
+results/<workbook_folder>/ranker_comparison_test_queries_plots/indirect/
+```
+
 Current plot files include:
 
 - `topanswer_comparison.png`
@@ -85,6 +102,7 @@ Plot notes:
   - right panels show NeverShow specificity at `k`
 - `f1_comparison.png`
   - left panels show precision at `k`
+  - middle panels show recall at `k`
   - right panels show F1 at `k`
   - F1 is computed from:
     - true positives = TopAnswer hits@k

@@ -29,6 +29,7 @@ class EdgeRecord:
     qid: int
     ara: str
     edge_id: str | None
+    is_direct_edge: bool | None
     subject_id: str | None
     subject_name: str | None
     object_id: str | None
@@ -157,10 +158,26 @@ def required_column_map(headers: Iterable[object]) -> dict[str, int]:
     }
 
 
+def optional_column_index(
+    headers: Iterable[object], column_name: str
+) -> int | None:
+    normalized_to_index = {
+        normalize_header(header): index for index, header in enumerate(headers)
+    }
+    return normalized_to_index.get(normalize_header(column_name))
+
+
 def maybe_int(value: object) -> int | None:
     if value is None or value == "":
         return None
     return int(value)
+
+
+def maybe_bool_from_int(value: object) -> bool | None:
+    parsed = maybe_int(value)
+    if parsed is None:
+        return None
+    return bool(parsed)
 
 
 def load_edge_records(
@@ -172,6 +189,7 @@ def load_edge_records(
     rows = sheet.iter_rows(values_only=True)
     headers = next(rows)
     columns = required_column_map(headers)
+    is_direct_edge_index = optional_column_index(headers, "is_direct_edge")
 
     records: list[EdgeRecord] = []
     query_edge_keys = set()
@@ -185,6 +203,11 @@ def load_edge_records(
             continue
         qid = int(qid)
         edge_id = row[columns["edge_id"]]
+        is_direct_edge = (
+            maybe_bool_from_int(row[is_direct_edge_index])
+            if is_direct_edge_index is not None
+            else None
+        )
         query_edge_key = (qid, edge_id)
         query_edge_keys.add(query_edge_key)
         query_edge_occurrences[query_edge_key].append(
@@ -197,6 +220,7 @@ def load_edge_records(
                 "object_id": row[columns["object_id"]],
                 "object_name": row[columns["object_name"]],
                 "expected_output": row[columns["expected_output"]],
+                "is_direct_edge": is_direct_edge,
                 "aragorn_rank": maybe_int(row[columns["aragorn_rank"]]),
                 "arax_rank": maybe_int(row[columns["arax_rank"]]),
             }
@@ -208,6 +232,7 @@ def load_edge_records(
                 qid=qid,
                 ara=str(row[columns["ara"]]),
                 edge_id=edge_id,
+                is_direct_edge=is_direct_edge,
                 subject_id=row[columns["subject_id"]],
                 subject_name=row[columns["subject_name"]],
                 object_id=row[columns["object_id"]],
@@ -244,6 +269,7 @@ def load_edge_records(
         "distinct_query_edge_keys": len(query_edge_keys),
         "duplicate_query_edge_ids": len(duplicate_report),
         "duplicate_query_edge_rows": duplicate_row_count,
+        "has_is_direct_edge": is_direct_edge_index is not None,
     }
     return records, metadata, duplicate_report
 
@@ -262,18 +288,6 @@ def label_category(
     if has_negative:
         return "negative"
     return "other"
-
-
-def ranked_records(records: list[EdgeRecord], ranker_name: str) -> list[EdgeRecord]:
-    return sorted(
-        (record for record in records if record.ranks[ranker_name] is not None),
-        key=lambda record: (
-            record.ranks[ranker_name],
-            record.edge_id or "",
-            record.subject_id or "",
-            record.object_id or "",
-        ),
-    )
 
 
 def summarize_group_metrics(
@@ -756,6 +770,8 @@ def print_dataset_summary(
                 ambiguous += 1
 
     print("Dataset summary")
+    if "scope_name" in metadata:
+        print(f"  Scope: {metadata['scope_name']}")
     print(f"  Sheet: {metadata['sheet']}")
     print(f"  Raw rows: {metadata['raw_rows']}")
     print(f"  Edge records analyzed: {metadata['edge_records']}")
@@ -771,6 +787,99 @@ def print_dataset_summary(
     print("  Label counts:")
     for label, count in sorted(label_counter.items()):
         print(f"    {label}: {count}")
+
+
+def build_scope_records(
+    records: list[EdgeRecord], metadata: dict[str, object], scope_name: str
+) -> tuple[list[EdgeRecord], dict[str, object]]:
+    if scope_name == "all":
+        scoped_records = records
+    elif scope_name == "indirect":
+        scoped_records = [record for record in records if record.is_direct_edge is False]
+    else:
+        raise ValueError(f"Unsupported scope: {scope_name}")
+
+    scoped_metadata = {
+        **metadata,
+        "scope_name": scope_name,
+        "raw_rows": len(scoped_records),
+        "edge_records": len(scoped_records),
+        "distinct_query_edge_keys": len(
+            {(record.qid, record.edge_id) for record in scoped_records}
+        ),
+    }
+    return scoped_records, scoped_metadata
+
+
+def filter_duplicate_report_for_scope(
+    duplicate_report: list[dict[str, object]], scope_name: str
+) -> list[dict[str, object]]:
+    if scope_name == "all":
+        return duplicate_report
+    if scope_name == "indirect":
+        filtered = []
+        for item in duplicate_report:
+            rows = [row for row in item["rows"] if row.get("is_direct_edge") is False]
+            if len(rows) <= 1:
+                continue
+            filtered.append(
+                {
+                    **item,
+                    "occurrences": len(rows),
+                    "aras": sorted({row["ARA"] for row in rows}),
+                    "rows": rows,
+                }
+            )
+        return filtered
+    raise ValueError(f"Unsupported scope: {scope_name}")
+
+
+def default_scope_names(metadata: dict[str, object]) -> list[str]:
+    if metadata.get("has_is_direct_edge"):
+        return ["all", "indirect"]
+    return ["all"]
+
+
+def resolve_scope_output_paths(
+    args: argparse.Namespace,
+    workbook_path: Path,
+    plot_dir: Path,
+    scope_name: str,
+    multi_scope: bool,
+) -> tuple[Path, Path | None, Path]:
+    if multi_scope:
+        scoped_plot_dir = plot_dir / scope_name
+    else:
+        scoped_plot_dir = plot_dir
+
+    if args.json_output is None:
+        scoped_json_output = (
+            scoped_plot_dir / "ranker_metrics_summary.json" if multi_scope else None
+        )
+    elif multi_scope:
+        scoped_json_output = (
+            args.json_output.parent
+            / f"{args.json_output.stem}_{scope_name}{args.json_output.suffix}"
+        )
+    else:
+        scoped_json_output = args.json_output
+
+    if args.duplicate_report is None:
+        if multi_scope:
+            duplicate_report_path = scoped_plot_dir / "duplicate_edge_ids.json"
+        else:
+            duplicate_report_path = (
+                workbook_path.parent / f"{workbook_path.stem}_duplicate_edge_ids.json"
+            )
+    elif multi_scope:
+        duplicate_report_path = (
+            args.duplicate_report.parent
+            / f"{args.duplicate_report.stem}_{scope_name}{args.duplicate_report.suffix}"
+        )
+    else:
+        duplicate_report_path = args.duplicate_report
+
+    return scoped_plot_dir, scoped_json_output, duplicate_report_path
 
 
 def print_duplicate_summary(duplicate_report: list[dict[str, object]]) -> None:
@@ -941,6 +1050,39 @@ def plot_line_panel(
     right_ax.set_xticks(ks)
 
 
+def plot_three_panel_row(
+    axes,
+    row_index: int,
+    row_title: str,
+    metric_by_ranker: dict[str, dict[int, dict[str, object]]],
+    ks: list[int],
+    panel_specs: list[tuple[str, str, str]],
+) -> None:
+    for column_index, (metric_key, title, ylabel) in enumerate(panel_specs):
+        ax = axes[row_index][column_index]
+        for ranker in RANKERS:
+            color = RANKER_COLORS[ranker]
+            values = [metric_by_ranker[ranker][k][metric_key] for k in ks]
+            ax.plot(ks, values, marker="o", linewidth=2, color=color, label=ranker)
+        ax.set_title(f"{row_title}: {title}")
+        ax.set_xlabel("k")
+        ax.set_ylabel(ylabel)
+        ax.grid(alpha=0.3)
+        ax.set_xticks(ks)
+
+
+def metric_panel_rows(
+    overall_metrics: dict[str, dict[int, dict[str, object]]],
+    metrics_by_ara: dict[str, dict[str, dict[int, dict[str, object]]]],
+) -> list[tuple[str, dict[str, dict[int, dict[str, object]]]]]:
+    if len(metrics_by_ara) == 1:
+        ara = next(iter(sorted(metrics_by_ara)))
+        return [(ara, metrics_by_ara[ara])]
+    return [("Overall", overall_metrics)] + [
+        (ara, metrics_by_ara[ara]) for ara in sorted(metrics_by_ara)
+    ]
+
+
 def save_metric_panels(
     output_path: Path,
     overall_metrics: dict[str, dict[int, dict[str, object]]],
@@ -954,35 +1096,22 @@ def save_metric_panels(
     right_ylabel: str,
     figure_title: str,
 ) -> None:
-    row_titles = ["Overall"] + sorted(metrics_by_ara)
+    row_specs = metric_panel_rows(overall_metrics, metrics_by_ara)
     fig, axes = plt.subplots(
-        nrows=len(row_titles),
+        nrows=len(row_specs),
         ncols=2,
-        figsize=(14, 4 * len(row_titles)),
+        figsize=(14, 4 * len(row_specs)),
         constrained_layout=False,
     )
-    if len(row_titles) == 1:
+    if len(row_specs) == 1:
         axes = [axes]
 
-    plot_line_panel(
-        axes,
-        0,
-        "Overall",
-        overall_metrics,
-        ks,
-        left_key,
-        left_title,
-        left_ylabel,
-        right_key,
-        right_title,
-        right_ylabel,
-    )
-    for row_index, ara in enumerate(sorted(metrics_by_ara), start=1):
+    for row_index, (row_title, row_metrics) in enumerate(row_specs):
         plot_line_panel(
             axes,
             row_index,
-            ara,
-            metrics_by_ara[ara],
+            row_title,
+            row_metrics,
             ks,
             left_key,
             left_title,
@@ -991,6 +1120,41 @@ def save_metric_panels(
             right_title,
             right_ylabel,
         )
+
+    handles, labels = axes[0][0].get_legend_handles_labels()
+    fig.suptitle(figure_title, fontsize=14, y=0.985)
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.955),
+        ncol=2,
+        frameon=False,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.92))
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
+def save_three_metric_panels(
+    output_path: Path,
+    overall_metrics: dict[str, dict[int, dict[str, object]]],
+    metrics_by_ara: dict[str, dict[str, dict[int, dict[str, object]]]],
+    ks: list[int],
+    panel_specs: list[tuple[str, str, str]],
+    figure_title: str,
+) -> None:
+    row_specs = metric_panel_rows(overall_metrics, metrics_by_ara)
+    fig, axes = plt.subplots(
+        nrows=len(row_specs),
+        ncols=3,
+        figsize=(21, 4 * len(row_specs)),
+        constrained_layout=False,
+        squeeze=False,
+    )
+
+    for row_index, (row_title, row_metrics) in enumerate(row_specs):
+        plot_three_panel_row(axes, row_index, row_title, row_metrics, ks, panel_specs)
 
     handles, labels = axes[0][0].get_legend_handles_labels()
     fig.suptitle(figure_title, fontsize=14, y=0.985)
@@ -1366,18 +1530,17 @@ def generate_plots(
     output_files.append(str(nevershow_path))
 
     f1_path = plot_dir / "f1_comparison.png"
-    save_metric_panels(
+    save_three_metric_panels(
         f1_path,
         overall_metrics,
         metrics_by_ara,
         ks,
-        left_key="precision_micro",
-        left_title="Precision@k",
-        left_ylabel="Micro precision",
-        right_key="f1_micro",
-        right_title="F1@k",
-        right_ylabel="Micro F1",
-        figure_title="Precision and F1 Comparison Across Rankers",
+        panel_specs=[
+            ("precision_micro", "Precision@k", "Micro precision"),
+            ("positive_recall_micro", "Recall@k", "Micro recall"),
+            ("f1_micro", "F1@k", "Micro F1"),
+        ],
+        figure_title="Precision, Recall, and F1 Comparison Across Rankers",
     )
     output_files.append(str(f1_path))
 
@@ -1420,6 +1583,7 @@ def build_json_payload(
     return {
         "workbook": str(args.workbook),
         "sheet": metadata["sheet"],
+        "scope_name": metadata.get("scope_name", "all"),
         "ks": args.ks,
         "positive_labels": sorted(args.positive_labels),
         "negative_labels": sorted(args.negative_labels),
@@ -1449,77 +1613,20 @@ def main() -> None:
     else:
         plot_dir = args.plot_dir
 
-    if args.duplicate_report is None:
-        duplicate_report_path = (
-            args.workbook.parent / f"{args.workbook.stem}_duplicate_edge_ids.json"
-        )
-    else:
-        duplicate_report_path = args.duplicate_report
-
     records, metadata, duplicate_report = load_edge_records(args.workbook, args.sheet)
-    (
-        overall_metrics,
-        pairwise_overall,
-        pairwise_margin_overall,
-        metrics_by_ara,
-        pairwise_by_ara,
-        pairwise_margin_by_ara,
-        strongest_positive_examples,
-        strongest_negative_examples,
-    ) = aggregate_metric_table(records, ks, positive_labels, negative_labels)
-    plot_files = generate_plots(
-        plot_dir,
-        overall_metrics,
-        pairwise_overall,
-        pairwise_margin_overall,
-        pairwise_margin_by_ara,
-        metrics_by_ara,
-        ks,
-    )
-    duplicate_report_path.write_text(
-        json.dumps(duplicate_report, indent=2), encoding="utf-8"
-    )
+    scope_names = default_scope_names(metadata)
+    multi_scope = len(scope_names) > 1
 
-    print_dataset_summary(metadata, records)
-    print()
-    print_duplicate_summary(duplicate_report)
-    print_metric_block("Overall metrics", overall_metrics, ks)
-    print_pairwise_block("Overall pairwise wins", pairwise_overall, ks)
-    print_pairwise_margin_block(
-        "Overall pairwise win margins", pairwise_margin_overall, ks
-    )
-    for ara in sorted(metrics_by_ara):
-        print_metric_block(f"Metrics for {ara}", metrics_by_ara[ara], ks)
-        print_pairwise_block(f"Pairwise wins for {ara}", pairwise_by_ara[ara], ks)
-    print_examples(
-        "Largest TopAnswer hit differences",
-        strongest_positive_examples,
-        args.show_group_examples,
-        "positive_hit_delta",
-    )
-    print_examples(
-        "Largest NeverShow differences where fewer is better",
-        strongest_negative_examples["fewest_nevershow"],
-        args.show_group_examples,
-        "negative_hit_delta",
-    )
-    print_examples(
-        "Largest NeverShow differences where more is worse",
-        strongest_negative_examples["most_nevershow"],
-        args.show_group_examples,
-        "negative_hit_delta",
-    )
-    print("Generated plots")
-    for plot_file in plot_files:
-        print(f"  {plot_file}")
-    print(f"Duplicate report\n  {duplicate_report_path}")
-
-    if args.json_output:
-        payload = build_json_payload(
-            args,
-            metadata,
-            str(duplicate_report_path),
-            duplicate_report,
+    for scope_name in scope_names:
+        scoped_records, scoped_metadata = build_scope_records(records, metadata, scope_name)
+        scoped_duplicate_report = filter_duplicate_report_for_scope(
+            duplicate_report, scope_name
+        )
+        scoped_metadata["duplicate_query_edge_ids"] = len(scoped_duplicate_report)
+        scoped_metadata["duplicate_query_edge_rows"] = sum(
+            item["occurrences"] for item in scoped_duplicate_report
+        )
+        (
             overall_metrics,
             pairwise_overall,
             pairwise_margin_overall,
@@ -1528,9 +1635,83 @@ def main() -> None:
             pairwise_margin_by_ara,
             strongest_positive_examples,
             strongest_negative_examples,
-            plot_files,
+        ) = aggregate_metric_table(scoped_records, ks, positive_labels, negative_labels)
+
+        scoped_plot_dir, scoped_json_output, duplicate_report_path = resolve_scope_output_paths(
+            args,
+            args.workbook,
+            plot_dir,
+            scope_name,
+            multi_scope,
         )
-        args.json_output.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        plot_files = generate_plots(
+            scoped_plot_dir,
+            overall_metrics,
+            pairwise_overall,
+            pairwise_margin_overall,
+            pairwise_margin_by_ara,
+            metrics_by_ara,
+            ks,
+        )
+        duplicate_report_path.parent.mkdir(parents=True, exist_ok=True)
+        duplicate_report_path.write_text(
+            json.dumps(scoped_duplicate_report, indent=2), encoding="utf-8"
+        )
+
+        print_dataset_summary(scoped_metadata, scoped_records)
+        print()
+        print_duplicate_summary(scoped_duplicate_report)
+        print_metric_block("Overall metrics", overall_metrics, ks)
+        print_pairwise_block("Overall pairwise wins", pairwise_overall, ks)
+        print_pairwise_margin_block(
+            "Overall pairwise win margins", pairwise_margin_overall, ks
+        )
+        for ara in sorted(metrics_by_ara):
+            print_metric_block(f"Metrics for {ara}", metrics_by_ara[ara], ks)
+            print_pairwise_block(f"Pairwise wins for {ara}", pairwise_by_ara[ara], ks)
+        print_examples(
+            "Largest TopAnswer hit differences",
+            strongest_positive_examples,
+            args.show_group_examples,
+            "positive_hit_delta",
+        )
+        print_examples(
+            "Largest NeverShow differences where fewer is better",
+            strongest_negative_examples["fewest_nevershow"],
+            args.show_group_examples,
+            "negative_hit_delta",
+        )
+        print_examples(
+            "Largest NeverShow differences where more is worse",
+            strongest_negative_examples["most_nevershow"],
+            args.show_group_examples,
+            "negative_hit_delta",
+        )
+        print("Generated plots")
+        for plot_file in plot_files:
+            print(f"  {plot_file}")
+        print(f"Duplicate report\n  {duplicate_report_path}")
+
+        if scoped_json_output is not None:
+            scoped_json_output.parent.mkdir(parents=True, exist_ok=True)
+            payload = build_json_payload(
+                args,
+                scoped_metadata,
+                str(duplicate_report_path),
+                scoped_duplicate_report,
+                overall_metrics,
+                pairwise_overall,
+                pairwise_margin_overall,
+                metrics_by_ara,
+                pairwise_by_ara,
+                pairwise_margin_by_ara,
+                strongest_positive_examples,
+                strongest_negative_examples,
+                plot_files,
+            )
+            scoped_json_output.write_text(
+                json.dumps(payload, indent=2), encoding="utf-8"
+            )
 
 
 if __name__ == "__main__":
