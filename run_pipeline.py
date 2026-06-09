@@ -89,7 +89,7 @@ def write_results(out, query_rows, all_results):
     with pd.ExcelWriter(out) as writer:
         df_queries.to_excel(writer, sheet_name="input_query", index=False)
         if not df_results.empty:
-            df_results.to_excel(writer, sheet_name="ARA_Ranker_Results", index=False)
+            df_results.to_excel(writer, sheet_name="ARS", index=False)
 
     print(f"checkpoint saved to {out} ({len(query_rows)} queries, {len(all_results)} result frames)")
 
