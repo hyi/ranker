@@ -1483,6 +1483,7 @@ def save_pairwise_margin_by_ara_plot(
 
 def generate_plots(
     plot_dir: Path,
+    scope_name: str,
     overall_metrics: dict[str, dict[int, dict[str, object]]],
     pairwise_overall: dict[int, dict[str, dict[str, int]]],
     pairwise_margin_overall: dict[
@@ -1496,6 +1497,7 @@ def generate_plots(
 ) -> list[str]:
     plot_dir.mkdir(parents=True, exist_ok=True)
     output_files = []
+    scope_suffix = f" ({scope_name})"
 
     topanswer_path = plot_dir / "topanswer_comparison.png"
     save_metric_panels(
@@ -1509,7 +1511,7 @@ def generate_plots(
         right_key="positive_recall_micro",
         right_title="TopAnswer recall@k",
         right_ylabel="Micro recall",
-        figure_title="TopAnswer Comparison Across Rankers",
+        figure_title=f"TopAnswer Comparison Across Rankers{scope_suffix}",
     )
     output_files.append(str(topanswer_path))
 
@@ -1525,7 +1527,7 @@ def generate_plots(
         right_key="negative_specificity_micro",
         right_title="NeverShow specificity@k",
         right_ylabel="Micro specificity",
-        figure_title="NeverShow Comparison Across Rankers",
+        figure_title=f"NeverShow Comparison Across Rankers{scope_suffix}",
     )
     output_files.append(str(nevershow_path))
 
@@ -1540,7 +1542,7 @@ def generate_plots(
             ("positive_recall_micro", "Recall@k", "Micro recall"),
             ("f1_micro", "F1@k", "Micro F1"),
         ],
-        figure_title="Precision, Recall, and F1 Comparison Across Rankers",
+        figure_title=f"Precision, Recall, and F1 Comparison Across Rankers{scope_suffix}",
     )
     output_files.append(str(f1_path))
 
@@ -1646,6 +1648,7 @@ def main() -> None:
         )
         plot_files = generate_plots(
             scoped_plot_dir,
+            scope_name,
             overall_metrics,
             pairwise_overall,
             pairwise_margin_overall,
