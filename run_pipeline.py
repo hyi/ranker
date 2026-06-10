@@ -94,7 +94,7 @@ def write_results(out, query_rows, all_results):
     print(f"checkpoint saved to {out} ({len(query_rows)} queries, {len(all_results)} result frames)")
 
 
-def load_existing_results(out):
+def load_existing_results(out, data_sheet_name="ARS"):
     """Load previously saved results from an existing output file for resume support."""
     out_path = Path(out)
     if not out_path.exists():
@@ -114,7 +114,7 @@ def load_existing_results(out):
         print(f"warning: could not read input_query sheet: {e}")
 
     try:
-        df_results = pd.read_excel(out, sheet_name="ARA_Ranker_Results")
+        df_results = pd.read_excel(out, sheet_name=data_sheet_name)
         if not df_results.empty:
             all_results.append(df_results)
     except Exception as e:
@@ -128,7 +128,7 @@ def main(query_file, out):
     with open(query_file) as f:
         queries = json.load(f)
 
-    query_rows, all_results, completed_qids = load_existing_results(out)
+    query_rows, all_results, completed_qids = load_existing_results(out, data_sheet_name="ARA_Ranker_Results")
 
     for qid, query in enumerate(queries["queries"]):
         if qid in completed_qids:

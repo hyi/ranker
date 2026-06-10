@@ -78,7 +78,7 @@ def main(query_file, out):
     with open(query_file) as f:
         queries = json.load(f)
 
-    query_rows, all_results, completed_qids = load_existing_results(out)
+    query_rows, all_results, completed_qids = load_existing_results(out, data_sheet_name="Ranker_Results")
 
     for qid, query in enumerate(queries["queries"]):
         if qid in completed_qids:
