@@ -5,7 +5,7 @@ from pathlib import Path
 from create_ranker_query_data import filter_trapi_message, annotate_trapi_edges
 from ranker_scoring import run_query
 from compare_ranker_results import compare_rankers
-from run_pipeline import load_existing_results
+from run_pipeline import load_existing_results, write_results
 
 
 ARAGORN_RANKER_WORKFLOW = [
@@ -56,22 +56,6 @@ def process_query(qid:int, query:dict, expected_outputs:str):
     df = compare_rankers(ranker_responses["aragorn"], ranker_responses["arax"], expected_outputs, sort_by='arax_rank')
     sheets["ARAX_ARA"] = df
     return sheets
-
-
-def write_results(out, query_rows, all_results):
-    """Write current accumulated results to Excel, overwriting the previous checkpoint."""
-    df_results = pd.concat(all_results, ignore_index=True) if all_results else pd.DataFrame()
-    df_queries = pd.DataFrame(query_rows)
-
-    if not df_results.empty:
-        df_results = df_results[["qid", "ARA"] + [c for c in df_results.columns if c not in ("qid", "ARA")]]
-
-    with pd.ExcelWriter(out) as writer:
-        df_queries.to_excel(writer, sheet_name="input_query", index=False)
-        if not df_results.empty:
-            df_results.to_excel(writer, sheet_name="Ranker_Results", index=False)
-
-    print(f"checkpoint saved to {out} ({len(query_rows)} queries, {len(all_results)} result frames)")
 
 
 def main(query_file, out):

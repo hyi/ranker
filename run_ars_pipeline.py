@@ -2,7 +2,7 @@ import json
 import argparse
 import pandas as pd
 from pathlib import Path
-from create_ranker_query_data import filter_trapi_message
+from create_ranker_query_data import annotate_trapi_edges
 from ranker_scoring import run_query
 from compare_ranker_results import compare_rankers
 from run_pipeline import RANKERS, write_results, load_existing_results
@@ -43,13 +43,13 @@ def process_query(qid, query, expected_outputs, base_url):
         print(f"results key is not in ARS message: {merged['message']}")
         return sheets
 
-    # filtered_message = filter_trapi_message(merged["message"])
+    annotated_message = annotate_trapi_edges(merged["message"])
 
     ranker_responses = {}
     for ranker in RANKERS:
         print(f"  scoring with {ranker}")
         payload = {
-            "message": merged["message"],
+            "message": annotated_message,
             "workflow": RANKER_WORKFLOWS[ranker]
         }
         ranker_responses[ranker] = run_query(payload)
