@@ -1,0 +1,596 @@
+0 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 0f0f16e8-fb2b-4514-8cf7-685ebe098fd3
+  fetched merged message pk: 56373a24-8716-4e51-a2ae-d9538005456c
+annotating 68 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (1 queries, 1 result frames)
+1 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 2b4b10ab-fcc5-45ca-8aaa-467f7935acf4
+  fetched merged message pk: 5c8f38c0-a81f-4dc1-9229-c4ee16808aa9
+annotating 485 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (2 queries, 2 result frames)
+2 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: dac94dc9-0cc1-486e-9aa6-7bd3d0d9848c
+  fetched merged message pk: 61914cc3-7fa3-400a-80cf-b2454c50a91e
+annotating 1 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (3 queries, 3 result frames)
+3 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: f3c6e046-a604-4703-9c15-f8e31aa6f8df
+  fetched merged message pk: b51517d6-40da-4d1a-a8d3-f5a35c463a11
+annotating 521 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (4 queries, 4 result frames)
+4 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 1010ec7c-d943-427a-871a-763e73553663
+  fetched merged message pk: f0b67e67-04ed-4a33-9a1b-52faf45b43b6
+annotating 25 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (5 queries, 5 result frames)
+5 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 1f2d8b16-6c06-4fd7-80cf-0dd2ad4bee7e
+  fetched merged message pk: bebfd4f6-d6dc-443b-a291-ab89e232b606
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (6 queries, 5 result frames)
+6 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 755fd2b6-b3c7-4aea-a47a-0365d705d06b
+  fetched merged message pk: 7a1ac82f-8c00-45ce-b79a-e58cd0e5d518
+annotating 151 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (7 queries, 6 result frames)
+7 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 811b0059-84d5-40fa-9e29-e0a97768ea1f
+  fetched merged message pk: 8b2305c7-1975-468f-9c2b-ebca7a939419
+annotating 44 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (8 queries, 7 result frames)
+8 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: e20ebcec-a2e3-4b24-951c-db5abdff9b60
+  fetched merged message pk: 977d4871-6e34-4f87-ab83-c177a3e89a9b
+annotating 497 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (9 queries, 8 result frames)
+9 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 76190a65-f300-4e06-9015-64708130752c
+  fetched merged message pk: 7df391fb-76d1-45fe-91c8-9ff5c12aad0b
+annotating 400 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (10 queries, 9 result frames)
+10 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 91f8d306-864f-4f38-8de3-7fb8d2264e1a
+  fetched merged message pk: bbe3fa79-c088-489d-a2e2-2ffa8fa1e7d1
+annotating 487 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (11 queries, 10 result frames)
+11 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: e3d60f3d-de18-4b5d-8a30-0132a067428c
+  fetched merged message pk: 4f134856-79e2-461c-adc4-4b6f25d881ab
+annotating 500 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (12 queries, 11 result frames)
+12 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 6ebb2572-bb25-413f-9c76-d4997c4d8cf9
+  fetched merged message pk: ea1866e9-9b60-4feb-996e-a7210ad7f2bc
+annotating 70 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (13 queries, 12 result frames)
+13 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: fe85475e-9fb8-4b36-9482-d09d5ccd8c06
+  fetched merged message pk: b672b24c-43b2-4e54-94b3-71e974505fd6
+annotating 179 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (14 queries, 13 result frames)
+14 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8ebb2ee4-63e4-4a3e-ad72-7659c6ecafb4
+  fetched merged message pk: 927b2b2f-508f-4f79-8ebe-d7a37c9de3fe
+annotating 487 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (15 queries, 14 result frames)
+15 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8861d1cc-6841-4bd3-9fde-bfc208be5897
+  fetched merged message pk: 21bfd27a-30d2-447e-ac23-6af2128e1065
+annotating 32 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (16 queries, 15 result frames)
+16 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 1d18442f-b00e-40e6-bcb7-1de1e0ab750c
+  fetched merged message pk: 1e2f743a-a4a1-484a-9db2-e5fc21ba68ac
+annotating 512 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (17 queries, 16 result frames)
+17 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 349b81d0-6c09-4e89-b002-be8934c37626
+  fetched merged message pk: c4f5ebbf-1bfd-40bc-84c5-f1de201ff1aa
+annotating 701 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (18 queries, 17 result frames)
+18 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: a73c36c5-f81d-4a8e-91ad-cce635f1fdec
+  fetched merged message pk: a8e531af-9db5-463c-b1aa-ba1127a8d11e
+annotating 500 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (19 queries, 18 result frames)
+19 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: bb98418b-8d71-4fc7-81e9-318ff3e3d38c
+  fetched merged message pk: 97ee2c6d-bf6f-4868-a577-34f3f4053d84
+annotating 499 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (20 queries, 19 result frames)
+20 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: bd437b3b-11f4-4b12-af26-37be6d8c34e9
+  fetched merged message pk: 4868b1de-e534-4171-9467-26d4a72e12c6
+annotating 19 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (21 queries, 20 result frames)
+21 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: b2a07007-acc9-4b06-8daf-a64df2fdf905
+  fetched merged message pk: 321fd1c3-55a0-4d3c-bf59-235e26d2f9b8
+annotating 79 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (22 queries, 21 result frames)
+22 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 3206e729-5416-4097-a502-23d5c829bca8
+  fetched merged message pk: 89512155-60ac-4cb6-8da3-c7075aae5a3a
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (23 queries, 21 result frames)
+23 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 97e88442-5ede-4531-a86e-fb75089fc2db
+  fetched merged message pk: 77259d9c-19a0-4577-966e-4486bf2be7e8
+annotating 503 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (24 queries, 21 result frames)
+24 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: fa29da0e-cf1f-4793-a2d2-675960632976
+  fetched merged message pk: bad7213c-87f2-4516-9a1d-a09cef871050
+annotating 537 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (25 queries, 22 result frames)
+25 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 7d00f4b8-1df9-4a08-850c-2b06e79a7d79
+  fetched merged message pk: 9bf9e01f-2aec-41b1-b076-80c29f0c48ae
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (26 queries, 22 result frames)
+26 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 491a32f5-0983-4277-b6ea-14826b744c7b
+  fetched merged message pk: fbcd4912-2443-443b-81de-ee797d699e14
+annotating 454 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (27 queries, 23 result frames)
+27 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 7e0aa57a-2e77-4a5e-a3b5-ae393c1fa524
+  fetched merged message pk: 9bbbee42-baf8-43cd-8796-5fb2e1eab63a
+annotating 819 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (28 queries, 24 result frames)
+28 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: fbeada98-2e44-4b82-b9fe-45e910f4554f
+  fetched merged message pk: 20d40d9d-0b98-4aad-8651-254622df5c73
+annotating 613 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (29 queries, 25 result frames)
+29 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 6548e28c-1ff1-4579-b351-72a0cc966d44
+  fetched merged message pk: fd0e5573-0ded-4cc9-b121-a416c99eb2d3
+annotating 24 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (30 queries, 26 result frames)
+30 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 5493dd78-522f-4328-a978-f1d7c1700248
+  fetched merged message pk: 6d012baa-17ef-481e-a756-06548deaa49b
+annotating 500 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (31 queries, 27 result frames)
+31 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 1d8b1ec0-3783-4d95-aa02-91735d23ce8e
+  fetched merged message pk: e79fef6f-c1dc-432d-a179-62a42efb69ea
+annotating 174 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (32 queries, 28 result frames)
+32 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: e7f00202-7434-4f88-b4c8-43b2963cc06c
+  fetched merged message pk: f3792c1b-11f3-43b5-8261-18ca15fea922
+annotating 54 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (33 queries, 29 result frames)
+33 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 5210871b-484c-46c6-9c4f-8eb361d1bf42
+  fetched merged message pk: 24edefd1-972e-4f06-9917-b828fc7f0dd9
+annotating 228 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (34 queries, 30 result frames)
+34 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 719aa687-c879-41ae-bc98-d9ec4e44b49d
+  fetched merged message pk: 5b084c56-678d-4abb-956c-dadd25ff6c26
+annotating 25 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (35 queries, 31 result frames)
+35 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 6f66a8ae-57f2-457f-9635-1667f5837781
+  fetched merged message pk: 8f911dfc-26db-4c9d-813f-cf7e4ae75b59
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (36 queries, 31 result frames)
+36 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: e1fa0856-a03a-4ad7-8706-20117080fc04
+  fetched merged message pk: 8528b422-5e1d-4a6b-a87e-c2fc599b69aa
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (37 queries, 31 result frames)
+37 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 3262ba05-5a99-4c60-8545-5a97178a3391
+  fetched merged message pk: a1a64627-ec09-4b9b-a1e0-c00d0fd6144e
+annotating 375 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (38 queries, 32 result frames)
+38 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: e0a8c9ca-746a-4079-819a-3c02381ed01e
+  fetched merged message pk: dc316f7f-afb0-4d0b-b1ec-8f07b9f8c898
+annotating 13 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (39 queries, 33 result frames)
+39 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 55654cdb-7d52-4029-9c02-2c927e23d3d5
+  fetched merged message pk: ca07a7ba-3324-4df4-b070-ec9238e1dc2f
+annotating 183 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (40 queries, 34 result frames)
+40 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: cf5804d6-a76c-4ce7-9291-f15c412588e3
+  fetched merged message pk: f7f154d3-788e-4f8f-a0df-ad8b2ab99c53
+annotating 497 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (41 queries, 35 result frames)
+41 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8862668b-63f1-4593-b955-4a2d13c77e78
+  fetched merged message pk: cfae7044-09dd-46ce-ae78-c692a99dcf07
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (42 queries, 35 result frames)
+42 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 84342262-45d2-4ec0-8b1d-382723a2e168
+  fetched merged message pk: 1877d7d4-ab40-4d15-a1fd-fb6ed8ed2fbd
+annotating 423 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (43 queries, 36 result frames)
+43 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8440ab28-b317-41ca-9f2f-877e7d9d7ce6
+  fetched merged message pk: cf73691d-f533-47c1-92e4-6547f0302212
+annotating 39 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (44 queries, 37 result frames)
+44 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 85efc097-dc44-4e6a-b293-4a94d2decf8f
+  fetched merged message pk: eeaa95bd-9698-4f11-afb8-9e75aa6492b6
+annotating 35 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (45 queries, 38 result frames)
+45 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 4442ea97-5c4b-4510-a611-81ecad81aa97
+  fetched merged message pk: 75ad5cd2-974b-41a3-9865-845dba3d67b7
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (46 queries, 38 result frames)
+46 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 3a205a8d-aa42-4804-8f96-8946defee1c5
+  fetched merged message pk: 850a6ad1-eb44-4b22-98a2-eb215156123f
+annotating 491 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (47 queries, 39 result frames)
+47 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 126f286f-dd4c-4ef8-b12f-e31ff152732f
+  fetched merged message pk: 4e65e67a-a904-4a22-bcf0-3c57915317e6
+annotating 595 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (48 queries, 40 result frames)
+48 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 894ed69f-e5e8-4431-9b12-b699c754ded2
+  fetched merged message pk: a33d556b-7bc7-4ac7-8719-fce39eb32d1b
+annotating 8 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (49 queries, 41 result frames)
+49 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: c25a8ad2-f1d2-4e9e-bf21-ded5eee01a16
+  fetched merged message pk: 15f6ba9c-1cac-4db1-b622-fd75957f071a
+annotating 755 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (50 queries, 42 result frames)
+50 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 99849c42-2760-4ffc-9ffc-722a6d23cffe
+  fetched merged message pk: 4cae8ae9-3ba3-4498-af73-f6e218b6be9d
+annotating 2 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (51 queries, 43 result frames)
+51 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 03c4f72a-0ae1-43d6-a5e1-bc929fcda699
+  fetched merged message pk: 61749828-47c1-43f6-890d-bca7e1736eca
+annotating 58 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (52 queries, 44 result frames)
+52 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 1c7b689d-bc23-46ff-981b-2fee75e433e2
+  fetched merged message pk: 9d7fa9c8-e554-452c-a408-545dcf3960df
+annotating 496 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (53 queries, 45 result frames)
+53 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8df4d63d-8e7e-4b12-ac53-99615cb8d8a6
+  fetched merged message pk: b1ee25d6-4146-4e2c-8e61-e2026617204c
+annotating 500 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (54 queries, 46 result frames)
+54 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 234cbdeb-8ac2-40e1-96e3-20a6caf83d3a
+  fetched merged message pk: c802b674-9884-4dc5-835f-3b6804483ec2
+annotating 22 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (55 queries, 47 result frames)
+55 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: c696d924-24e3-4841-a26b-d9454e4a185c
+  fetched merged message pk: a84ce218-8ad3-4768-9a46-83baa492d2bc
+annotating 818 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (56 queries, 48 result frames)
+56 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 734acaf8-90e9-4e83-947d-f36b3fe37365
+  fetched merged message pk: 5d8b2eee-16ad-469e-9987-29d85fc33a12
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (57 queries, 48 result frames)
+57 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8df01b05-2cab-42f8-ade2-344c67457368
+  fetched merged message pk: 54f1319d-5531-4288-b29b-53dde8783c71
+annotating 558 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (58 queries, 49 result frames)
+58 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 87799eac-d360-4cf7-a782-bf0d87b6a635
+  fetched merged message pk: 410b5d96-a7a9-4d44-85f9-94707717a478
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (59 queries, 49 result frames)
+59 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 4513e3dd-dbd0-4d42-9446-1c7a8b39c7d7
+  fetched merged message pk: 5d8bed7c-75e9-475e-be5d-e22c2470c545
+annotating 500 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (60 queries, 50 result frames)
+60 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: b61519c5-7a8b-4698-9abd-058de4980b92
+  fetched merged message pk: 6564f8ea-c7d9-4b71-8b8e-eb1893de831c
+annotating 565 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (61 queries, 51 result frames)
+61 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8161040d-22b7-42f0-9f82-865987126d58
+  fetched merged message pk: 7939557f-2078-42a9-8891-99f40e658558
+annotating 94 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (62 queries, 52 result frames)
+62 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 80aafb70-16c6-41ae-95ff-d781ae622815
+  fetched merged message pk: 46d1160e-f436-4966-b669-cbf6191f8575
+annotating 80 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (63 queries, 53 result frames)
+63 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 4569c2d5-a5cb-4f01-8fc3-a033e22037eb
+  fetched merged message pk: cc58d2a3-a77c-4ece-ac66-720c1a3b0233
+annotating 34 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (64 queries, 54 result frames)
+64 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: fe572f9d-0ad1-4554-a29a-dd5421b9c098
+  fetched merged message pk: 756c78e7-6aef-4693-9f70-2b62fbd8bb8c
+annotating 485 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (65 queries, 55 result frames)
+65 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 93f6e2be-c067-4c73-b731-c0ad97ce76c2
+  fetched merged message pk: f1c751ca-7aa1-44fd-a336-7e7d181ce0a1
+annotating 337 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (66 queries, 56 result frames)
+66 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 67322cd3-efce-4581-be32-89da7cf28f4b
+  fetched merged message pk: 6e1a3fe9-cece-401e-8620-990cbe7ed2ac
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (67 queries, 56 result frames)
+67 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 90500be9-f14a-4c0f-894d-16c77d2aeeec
+  fetched merged message pk: 532faf9c-5e45-4155-b2ff-158fe2d67595
+annotating 41 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (68 queries, 57 result frames)
+68 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: affd4c21-a406-44e8-b3d7-47946ee06a28
+  fetched merged message pk: 2302bb38-7c61-43d7-94b4-93c69ff4f310
+annotating 29 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (69 queries, 58 result frames)
+69 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 574dbb98-047f-4514-97bf-7e9318bce211
+  fetched merged message pk: 4e30d1f9-a693-4821-b953-04facbd4a161
+annotating 487 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (70 queries, 59 result frames)
+70 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 86f4ee92-2af2-4d1b-8139-eb338efbeb38
+  fetched merged message pk: 1bac7c02-877e-4fa3-8839-2057cb78171c
+annotating 500 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (71 queries, 60 result frames)
+71 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 9180adf4-0916-4292-9c6f-f7b22ea5b35b
+  fetched merged message pk: c1bbe531-141f-43fe-b8b9-c42b23ee9dd5
+annotating 209 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (72 queries, 61 result frames)
+72 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 7983bbfc-9022-499c-8131-b9f48603aa0f
+  fetched merged message pk: 96297b8f-0f92-4601-91c9-6cb0411a4ec4
+annotating 5 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (73 queries, 62 result frames)
+73 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 7d3ea570-5dd6-44d7-a7c8-0385695375b3
+  fetched merged message pk: b2ef323e-646e-419f-9445-a737c2672b89
+annotating 80 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (74 queries, 63 result frames)
+74 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: f1dd890f-a8e4-44d3-9db4-ac911f6d279c
+  fetched merged message pk: b4041a31-8cd7-4f00-9c02-56d43445d547
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (75 queries, 63 result frames)
+75 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 921589d4-9152-408e-b2d9-608d2b855766
+  fetched merged message pk: 0b8533bf-f257-43fe-a67f-3c22f5dfb1db
+annotating 4 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (76 queries, 64 result frames)
+76 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: bef43de4-fada-4947-8cd4-b1c21ec35024
+  fetched merged message pk: ed072cab-beff-4273-80e1-fd81b8a62c5c
+annotating 518 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (77 queries, 64 result frames)
+77 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: ae92a735-d39b-4a96-b684-dc3c11e961c8
+  fetched merged message pk: 541c3ccf-150c-406e-abac-477f4b916437
+annotating 3 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (78 queries, 65 result frames)
+78 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 652ecbfd-1fe2-4e9f-89c4-a430d4193baf
+  fetched merged message pk: 152e6110-0934-40ec-aa8f-e2e6aec19cbc
+annotating 412 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (79 queries, 66 result frames)
+79 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 2cd5f2db-81cd-481b-84a5-d1a7364df7c3
+  fetched merged message pk: c748dfaf-7169-477e-b1f7-b9feeeacaac5
+annotating 474 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (80 queries, 67 result frames)
+80 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 025f4b94-239b-4d22-8493-12a1f1f1d333
+  fetched merged message pk: 5a7e2ff8-1c1a-40d8-8450-ea1852492c0a
+annotating 49 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (81 queries, 68 result frames)
+81 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 8dc4b16e-f840-4cc2-8348-e56921b98171
+  fetched merged message pk: d5ddf6a4-68f5-4d3c-98d1-c580c6a14291
+annotating 273 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (82 queries, 2 result frames)
+82 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: ef93fdee-1ebc-433d-8479-97ef5c9c6177
+  fetched merged message pk: f7f020f4-8062-4dd0-b8cb-3c25dcb62188
+annotating 111 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (83 queries, 3 result frames)
+83 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: f998f0d4-580e-4776-8a3c-08a353abef3f
+  fetched merged message pk: 8f4ab16b-bb55-4fdd-ba5d-e6ecb1e1652c
+annotating 656 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (84 queries, 4 result frames)
+84 submitting to ARS at https://ars-dev.transltr.io
+ARS submitted, parent pk: 550a6e79-9d05-4abc-a8a0-e46ceaaab8c4
+  fetched merged message pk: f578e0c5-5200-4169-bc6d-11c8327efc6b
+annotating 0 results
+  scoring with aragorn
+  scoring with arax
+checkpoint saved to results/ars/ranker_comparison_test_queries.xlsx (85 queries, 4 result frames)
+done — final output at results/ars/ranker_comparison_test_queries.xlsx
