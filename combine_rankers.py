@@ -26,8 +26,8 @@ ARA_COLORS = {
     "BTE_ARA": "#2ca02c",
 }
 DEFAULT_KS = [1, 3, 5, 10, 20, 50, 100]
-DEFAULT_VETO_THRESHOLDS = [5, 10, 20, 25, 50, 100]
-DEFAULT_RRF_WEIGHTS = [0.6, 0.7, 0.8, 0.9]
+DEFAULT_VETO_THRESHOLDS = [5, 10, 20, 25, 50, 100, 200]
+DEFAULT_RRF_WEIGHTS = [0.5, 0.6, 0.7, 0.8, 0.9]
 DEFAULT_RRF_C_VALUES = [10, 20, 40, 50, 60]
 DEFAULT_ARAGORN_TOPK_DIAGNOSTICS = [10, 20]
 ARAX_ARA_NAME = "ARAX_ARA"
@@ -121,6 +121,11 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--indirect-only",
+        action="store_true",
+        help="Restrict the combination diagnostics and plots to indirect edges only.",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
@@ -152,6 +157,30 @@ def empty_aggregate(ks: list[int]) -> dict[int, dict[str, object]]:
     }
 
 
+def competition_rank_map(
+    group_records: list[EdgeRecord],
+    rank_key_for_record,
+) -> dict[int, int]:
+    """Assign pandas method='min' style ranks so ties share the same rank."""
+    ordered = sorted(
+        group_records,
+        key=lambda record: (
+            rank_key_for_record(record),
+            record.edge_id,  # tie-breaker to make processing deterministic
+        ),
+    )
+    rank_map = {}
+    previous_key = object()
+    previous_rank = None
+    for position, record in enumerate(ordered, start=1):
+        rank_key = rank_key_for_record(record)
+        if rank_key != previous_key:
+            previous_key = rank_key
+            previous_rank = position
+        rank_map[id(record)] = previous_rank
+    return rank_map
+
+
 def rank_map_for_method(
     group_records: list[EdgeRecord],
     method: MethodSpec,
@@ -162,22 +191,14 @@ def rank_map_for_method(
 
     if method.kind == "arax_veto":
         threshold = int(method.params["threshold"])
-
-        def sort_key(record: EdgeRecord):
-            aragorn_rank = record.ranks["ARAGORN_RANKER"]
+        rank_map = {}
+        for record in group_records:
             arax_rank = record.ranks["ARAX_RANKER"]
-            vetoed = arax_rank is None or arax_rank > threshold
-            missing_aragorn = aragorn_rank is None
-            return (
-                1 if vetoed else 0,
-                1 if missing_aragorn else 0,
-                math.inf if aragorn_rank is None else aragorn_rank,
-                math.inf if arax_rank is None else arax_rank,
-                record.edge_id,  # tie-breaker to make output order deterministic
-            )
-
-        ordered = sorted(group_records, key=sort_key)
-        return {id(record): index for index, record in enumerate(ordered, start=1)}
+            if arax_rank is None or arax_rank > threshold:
+                rank_map[id(record)] = None
+            else:
+                rank_map[id(record)] = record.ranks["ARAGORN_RANKER"]
+        return rank_map
 
     if method.kind == "rrf":
         aragorn_weight = float(method.params["aragorn_weight"])
@@ -189,7 +210,7 @@ def rank_map_for_method(
                 return 0.0
             return weight / (c_value + rank)
 
-        def sort_key(record: EdgeRecord):
+        def rank_key(record: EdgeRecord):
             aragorn_rank = record.ranks["ARAGORN_RANKER"]
             arax_rank = record.ranks["ARAX_RANKER"]
             score = reciprocal(aragorn_rank, aragorn_weight) + reciprocal(
@@ -197,13 +218,9 @@ def rank_map_for_method(
             )
             return (
                 -score,
-                math.inf if aragorn_rank is None else aragorn_rank,
-                math.inf if arax_rank is None else arax_rank,
-                record.edge_id,  # tie-breaker to make output order deterministic
             )
 
-        ordered = sorted(group_records, key=sort_key)
-        return {id(record): index for index, record in enumerate(ordered, start=1)}
+        return competition_rank_map(group_records, rank_key)
 
     raise ValueError(f"Unsupported method kind: {method.kind}")
 
@@ -687,11 +704,15 @@ def select_best_methods(
     methods: list[MethodSpec],
     overall_metrics: dict[str, dict[int, dict[str, object]]],
     target_k: int,
-) -> tuple[str | None, str | None]:
+) -> tuple[str | None, str | None, str | None, str | None]:
     best_veto = None
     best_rrf = None
+    best_equal_rrf = None
+    best_non_equal_rrf = None
     best_veto_score = float("-inf")
     best_rrf_score = float("-inf")
+    best_equal_rrf_score = float("-inf")
+    best_non_equal_rrf_score = float("-inf")
 
     for method in methods:
         score = overall_metrics[method.name][target_k]["f1_micro"]
@@ -703,7 +724,18 @@ def select_best_methods(
         if method.kind == "rrf" and score > best_rrf_score:
             best_rrf = method.name
             best_rrf_score = score
-    return best_veto, best_rrf
+        if method.kind == "rrf" and float(method.params["aragorn_weight"]) != 0.5:
+            if score > best_non_equal_rrf_score:
+                best_non_equal_rrf = method.name
+                best_non_equal_rrf_score = score
+        if (
+            method.kind == "rrf"
+            and float(method.params["aragorn_weight"]) == 0.5
+            and score > best_equal_rrf_score
+        ):
+            best_equal_rrf = method.name
+            best_equal_rrf_score = score
+    return best_veto, best_rrf, best_equal_rrf, best_non_equal_rrf
 
 
 def interpolate_crossings(
@@ -780,6 +812,7 @@ def plot_best_method_comparison(
         RANKER_COLORS["ARAX_RANKER"],
         "#2ca02c",
         "#9467bd",
+        "#8c564b",
     ]
     method_colors = {
         method_name: color
@@ -849,12 +882,15 @@ def build_json_summary(
     method_summary_rows: list[dict[str, object]],
     best_veto: str | None,
     best_rrf: str | None,
+    best_equal_rrf: str | None,
+    best_non_equal_rrf: str | None,
     plot_files: list[str],
 ) -> dict[str, object]:
     return {
         "workbook": str(args.workbook),
         "sheet": metadata["sheet"],
         "arax_ara_only": args.arax_ara_only,
+        "indirect_only": args.indirect_only,
         "target_k": args.target_k,
         "positive_labels": sorted(args.positive_labels),
         "negative_labels": sorted(args.negative_labels),
@@ -864,6 +900,8 @@ def build_json_summary(
         "method_summary_at_target_k": method_summary_rows,
         "best_veto_method": best_veto,
         "best_rrf_method": best_rrf,
+        "best_equal_weight_rrf_method": best_equal_rrf,
+        "best_non_equal_weight_rrf_method": best_non_equal_rrf,
         "plot_files": plot_files,
     }
 
@@ -871,8 +909,12 @@ def build_json_summary(
 def resolve_output_dir(args: argparse.Namespace) -> Path:
     if args.output_dir is not None:
         return args.output_dir
+    if args.arax_ara_only and args.indirect_only:
+        return Path("results/ranker_combination_outputs_arax_ara_indirect_only")
     if args.arax_ara_only:
         return Path("results/ranker_combination_outputs_arax_ara_only")
+    if args.indirect_only:
+        return Path("results/ranker_combination_outputs_indirect")
     return Path("results/ranker_combination_outputs")
 
 
@@ -881,19 +923,50 @@ def filter_records_for_scope(
     metadata: dict[str, object],
     duplicate_report: list[dict[str, object]],
     arax_ara_only: bool,
+    indirect_only: bool,
 ) -> tuple[list[EdgeRecord], dict[str, object], list[dict[str, object]]]:
-    if not arax_ara_only:
+    if not arax_ara_only and not indirect_only:
         return records, metadata, duplicate_report
 
-    filtered_records = [record for record in records if record.ara == ARAX_ARA_NAME]
-    filtered_duplicate_report = [
-        item
-        for item in duplicate_report
-        if set(item["aras"]) == {ARAX_ARA_NAME}
-    ]
+    filtered_records = records
+    scope_parts = []
+    if arax_ara_only:
+        filtered_records = [
+            record for record in filtered_records if record.ara == ARAX_ARA_NAME
+        ]
+        scope_parts.append(ARAX_ARA_NAME)
+    if indirect_only:
+        filtered_records = [
+            record for record in filtered_records if record.is_direct_edge is False
+        ]
+        scope_parts.append("INDIRECT_EDGES")
+
+    filtered_record_keys = {
+        (record.qid, record.edge_id) for record in filtered_records
+    }
+    filtered_duplicate_report = []
+    for item in duplicate_report:
+        if (item["qid"], item["edge_id"]) not in filtered_record_keys:
+            continue
+        rows = item["rows"]
+        if arax_ara_only:
+            rows = [row for row in rows if row["ARA"] == ARAX_ARA_NAME]
+        if indirect_only:
+            rows = [row for row in rows if row.get("is_direct_edge") is False]
+        if len(rows) <= 1:
+            continue
+        filtered_duplicate_report.append(
+            {
+                **item,
+                "occurrences": len(rows),
+                "aras": sorted({row["ARA"] for row in rows}),
+                "rows": rows,
+            }
+        )
+
     filtered_metadata = {
         **metadata,
-        "scope": ARAX_ARA_NAME,
+        "scope": "+".join(scope_parts),
         "raw_rows": len(filtered_records),
         "edge_records": len(filtered_records),
         "distinct_query_edge_keys": len(
@@ -919,7 +992,7 @@ def main() -> None:
 
     records, metadata, duplicate_report = load_edge_records(args.workbook, args.sheet)
     records, metadata, duplicate_report = filter_records_for_scope(
-        records, metadata, duplicate_report, args.arax_ara_only
+        records, metadata, duplicate_report, args.arax_ara_only, args.indirect_only
     )
     methods = build_method_specs(args)
     overall_metrics, _ = evaluate_methods(
@@ -933,7 +1006,9 @@ def main() -> None:
         records, thresholds, aragorn_topks, positive_labels, negative_labels
     )
     method_summary_rows = build_method_summary_rows(overall_metrics, args.target_k)
-    best_veto, best_rrf = select_best_methods(methods, overall_metrics, args.target_k)
+    best_veto, best_rrf, best_equal_rrf, best_non_equal_rrf = select_best_methods(
+        methods, overall_metrics, args.target_k
+    )
 
     labeled_summary_path = output_dir / "labeled_rank_summary.csv"
     threshold_csv_path = output_dir / "arax_veto_threshold_sweep.csv"
@@ -956,10 +1031,14 @@ def main() -> None:
     plot_files.append(str(veto_sweep_path))
 
     selected_methods = ["ARAGORN_RANKER", "ARAX_RANKER"]
-    if best_veto:
-        selected_methods.append(best_veto)
-    if best_rrf:
-        selected_methods.append(best_rrf)
+
+    def append_selected(method_name: str | None) -> None:
+        if method_name and method_name not in selected_methods:
+            selected_methods.append(method_name)
+
+    append_selected(best_veto)
+    append_selected(best_rrf)
+    append_selected(best_equal_rrf)
     best_methods_path = output_dir / "best_method_comparison.png"
     plot_best_method_comparison(
         overall_metrics,
@@ -982,6 +1061,8 @@ def main() -> None:
                 method_summary_rows,
                 best_veto,
                 best_rrf,
+                best_equal_rrf,
+                best_non_equal_rrf,
                 plot_files,
             ),
             indent=2,

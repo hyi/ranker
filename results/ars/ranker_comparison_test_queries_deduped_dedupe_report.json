@@ -1,0 +1,18 @@
+{
+  "input_workbook": "results/ars/ranker_comparison_test_queries.xlsx",
+  "output_workbook": "results/ars/ranker_comparison_test_queries_deduped.xlsx",
+  "sheet": "ARS",
+  "raw_rows": 52476,
+  "deduped_rows": 24111,
+  "duplicate_groups": 9455,
+  "duplicate_rows": 37820,
+  "max_duplicate_group_size": 4,
+  "conflict_columns": {},
+  "deduped_label_counts": {
+    "Acceptable": 89,
+    "BadButForgivable": 3,
+    "NeverShow": 48,
+    "TopAnswer": 284,
+    "Unlabeled": 23687
+  }
+}

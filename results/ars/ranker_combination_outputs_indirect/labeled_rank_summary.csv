@@ -1,0 +1,5 @@
+scope,label,count,aragorn_mean_rank,arax_mean_rank,aragorn_median_rank,arax_median_rank,aragorn_rank_le_10,arax_rank_le_10,aragorn_rank_le_20,arax_rank_le_20,aragorn_rank_le_50,arax_rank_le_50,aragorn_rank_le_100,arax_rank_le_100
+overall,TopAnswer,49,23.244897959183675,50.91836734693877,1.0,8.0,43,25,43,26,43,28,43,42
+overall,NeverShow,41,101.1951219512195,185.46341463414635,3.0,170.0,23,6,25,9,26,14,26,15
+ARS,TopAnswer,49,23.244897959183675,50.91836734693877,1.0,8.0,43,25,43,26,43,28,43,42
+ARS,NeverShow,41,101.1951219512195,185.46341463414635,3.0,170.0,23,6,25,9,26,14,26,15
