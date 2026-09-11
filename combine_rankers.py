@@ -372,7 +372,9 @@ def build_method_specs(args: argparse.Namespace) -> list[MethodSpec]:
                 params={"threshold": threshold},
             )
         )
-    for weight in sorted(set(args.rrf_aragorn_weights)):
+    rrf_weights = set(args.rrf_aragorn_weights)
+    rrf_weights.add(0.5)
+    for weight in sorted(rrf_weights):
         for c_value in sorted(set(args.rrf_c_values)):
             methods.append(
                 MethodSpec(
@@ -1037,6 +1039,8 @@ def main() -> None:
             selected_methods.append(method_name)
 
     append_selected(best_veto)
+    # Plot the best RRF first. If equal-weight RRF is the best, this is the purple
+    # RRF line; otherwise the equal-weight RRF is added as an additional line.
     append_selected(best_rrf)
     append_selected(best_equal_rrf)
     best_methods_path = output_dir / "best_method_comparison.png"
