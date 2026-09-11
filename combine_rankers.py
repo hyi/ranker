@@ -814,7 +814,7 @@ def plot_best_method_comparison(
         RANKER_COLORS["ARAX_RANKER"],
         "#2ca02c",
         "#9467bd",
-        "#8c564b",
+        "#ff7f0e",
     ]
     method_colors = {
         method_name: color
